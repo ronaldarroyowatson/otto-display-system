@@ -1,0 +1,10 @@
+﻿{
+  "module": "display-assignments",
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/content/assignments.json",
+      "description": "Get normalized assignment feed for displays."
+    }
+  ]
+}

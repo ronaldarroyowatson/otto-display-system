@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Runtime artifacts
+*.log
+.tmp/
+tmp/
+
+# Update package artifacts
+update/dist/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Keep cloned Otto repositories but ignore nested git metadata
+external/otto/**/.git/

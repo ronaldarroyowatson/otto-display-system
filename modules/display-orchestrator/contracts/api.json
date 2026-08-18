@@ -1,0 +1,11 @@
+﻿{
+  "module": "display-orchestrator",
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/display/:role/current",
+      "command": "display.current",
+      "description": "Return the current role-specific display payload."
+    }
+  ]
+}

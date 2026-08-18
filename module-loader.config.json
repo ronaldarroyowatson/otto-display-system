@@ -1,0 +1,12 @@
+﻿{
+  "$schema": "./config/module-loader.schema.json",
+  "moduleSearchPaths": [
+    "external/otto",
+    "modules",
+    "packages"
+  ],
+  "contracts": {
+    "commands": "contracts/commands",
+    "api": "contracts/api"
+  }
+}

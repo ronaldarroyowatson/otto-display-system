@@ -1,0 +1,10 @@
+﻿{
+  "module": "display-orchestrator",
+  "commands": [
+    {
+      "id": "display.current",
+      "description": "Compute current display state for a given role.",
+      "input": { "role": "hallway|sidewall|backwall" }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DisplayAssignmentsFeed",
+  "type": "object",
+  "required": ["generatedAt", "assignments"],
+  "properties": {
+    "generatedAt": { "type": "string" },
+    "assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["course", "title", "dueAt"],
+        "properties": {
+          "course": { "type": "string" },
+          "title": { "type": "string" },
+          "dueAt": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

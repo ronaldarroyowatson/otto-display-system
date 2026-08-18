@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "moduleDiscovery": {
+    "workspacePatterns": [
+      "packages/*",
+      "external/otto/*",
+      "external/otto/*/packages/*"
+    ]
+  },
+  "contracts": {
+    "command": "./contracts/command.contract.json",
+    "api": "./contracts/api.contract.json"
+  }
+}

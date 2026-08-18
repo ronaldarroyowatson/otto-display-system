@@ -1,0 +1,9 @@
+{
+  "name": "@display/otto-cli-runtime",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "otto": "node ./src/otto.mjs"
+  }
+}

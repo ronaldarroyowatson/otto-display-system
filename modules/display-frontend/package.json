@@ -1,0 +1,11 @@
+﻿{
+  "name": "@otto-display/display-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ./src/build.js",
+    "typecheck": "echo no-typecheck",
+    "test": "node --test"
+  }
+}

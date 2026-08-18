@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Otto Display Module Loader Config",
+  "type": "object",
+  "required": ["moduleSearchPaths", "contracts"],
+  "properties": {
+    "moduleSearchPaths": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "contracts": {
+      "type": "object",
+      "required": ["commands", "api"],
+      "properties": {
+        "commands": { "type": "string" },
+        "api": { "type": "string" }
+      }
+    }
+  }
+}

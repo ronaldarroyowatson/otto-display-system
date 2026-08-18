@@ -1,0 +1,10 @@
+﻿{
+  "module": "display-calendar",
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/content/calendar.json",
+      "description": "Get normalized calendar feed for displays."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+﻿{
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/display/:role/current",
+      "command": "display.current"
+    },
+    {
+      "method": "GET",
+      "route": "/content/calendar.json",
+      "command": "calendar.refresh"
+    },
+    {
+      "method": "GET",
+      "route": "/content/assignments.json",
+      "command": "assignments.import"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+﻿{
+  "module": "display-assignments",
+  "commands": [
+    {
+      "id": "assignments.import",
+      "invocation": "otto assignments import <file>",
+      "description": "Import FACTS assignment CSV into normalized JSON."
+    }
+  ]
+}

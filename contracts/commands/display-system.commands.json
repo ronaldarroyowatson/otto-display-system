@@ -1,0 +1,19 @@
+﻿{
+  "commands": [
+    {
+      "id": "display.current",
+      "description": "Compute current display payload for a role.",
+      "module": "display-orchestrator"
+    },
+    {
+      "id": "calendar.refresh",
+      "description": "Refresh normalized calendar content.",
+      "module": "display-calendar"
+    },
+    {
+      "id": "assignments.import",
+      "description": "Import FACTS assignment CSV and normalize records.",
+      "module": "display-assignments"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DisplaySchedule",
+  "type": "object",
+  "required": ["days"],
+  "properties": {
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "periods"],
+        "properties": {
+          "name": { "type": "string" },
+          "periods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["label", "startsAt", "endsAt"],
+              "properties": {
+                "label": { "type": "string" },
+                "startsAt": { "type": "string" },
+                "endsAt": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

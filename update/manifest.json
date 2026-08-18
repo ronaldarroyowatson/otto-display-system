@@ -1,0 +1,19 @@
+﻿{
+  "packageId": "otto-display-system",
+  "version": "0.1.0",
+  "generatedAt": "REPLACE_AT_BUILD",
+  "modules": [
+    "display-orchestrator",
+    "display-api-interface",
+    "display-calendar",
+    "display-assignments",
+    "display-schedule",
+    "display-frontend"
+  ],
+  "includes": {
+    "frontendAssets": ["modules/display-frontend/public"],
+    "configs": ["config", "module-loader.config.json"],
+    "schedules": ["config/schedules"],
+    "schemas": ["schemas", "modules/*/schemas"]
+  }
+}

@@ -1,0 +1,10 @@
+﻿{
+  "module": "display-calendar",
+  "commands": [
+    {
+      "id": "calendar.refresh",
+      "invocation": "otto calendar refresh",
+      "description": "Refresh Google and Outlook calendar feeds."
+    }
+  ]
+}

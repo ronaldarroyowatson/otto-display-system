@@ -1,0 +1,14 @@
+﻿OK   otto-kernel
+OK   otto-command-service
+OK   otto-server
+OK   otto-protocol
+OK   otto-update
+OK   otto-update-ui
+OK   otto-extensions
+OK   otto-auth-extension
+OK   otto-api-extension
+OK   otto-cli-extension
+OK   otto-design-system
+OK   otto-design-system-dev-ui
+OK   otto-module-template
+OK   otto-sample-module

@@ -1,0 +1,8 @@
+﻿{
+  "ottoCliExtension": "external/otto/otto-cli-extension",
+  "ottoApiExtension": "external/otto/otto-api-extension",
+  "ottoAuthExtension": "external/otto/otto-auth-extension",
+  "ottoUpdate": "external/otto/otto-update",
+  "ottoDesignSystem": "external/otto/otto-design-system",
+  "ottoModuleTemplate": "external/otto/otto-module-template"
+}
