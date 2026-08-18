@@ -3,6 +3,7 @@ import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { discoverModules } from '../../runtime-shared/src/module-discovery.mjs';
 
 import { buildDisplayCurrentHandler } from '../../../modules/display-orchestrator/dist/api/current-endpoint.js';
 import { getCalendarJson } from '../../../modules/display-calendar/dist/api/calendar-endpoint.js';
@@ -12,8 +13,10 @@ const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
+const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
 
 const displayCurrentHandler = buildDisplayCurrentHandler();
+const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -60,7 +63,15 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${HOST}:${PORT}`);
 
   if (request.method === 'GET' && url.pathname === '/health') {
-    sendJson(response, 200, { status: 'ok' });
+    sendJson(response, 200, {
+      status: 'ok',
+      moduleCount: discoveredModules.moduleCount
+    });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/modules') {
+    sendJson(response, 200, discoveredModules);
     return;
   }
 
@@ -90,5 +101,5 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`display-runtime-ready http://${HOST}:${PORT}`);
+  console.log(`display-runtime-ready http://${HOST}:${PORT} modules=${discoveredModules.moduleCount}`);
 });
