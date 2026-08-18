@@ -22,7 +22,7 @@ Purpose: Persistent project memory for Otto Display System architecture, workflo
 
 - display-orchestrator:
   - Computes current event/phase per role.
-  - Exposes /display/<role>/current contract.
+  - Exposes /display/{role}/current contract.
 - display-api-interface:
   - Wraps PiSignage, FACTS ingestion, Google Calendar, and Microsoft Graph.
 - display-calendar:
