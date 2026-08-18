@@ -18,7 +18,7 @@ Validate Otto Display System on one development Raspberry Pi without disrupting 
    - PiSignage player config export.
    - Existing kiosk URL and startup services.
 3. Install Otto Display System using one-line installer.
-4. Verify installer created /install/otto-display-system/current and auto-update job.
+4. Verify installer created /opt/otto-display-system/current and auto-update job.
 5. Set kiosk URL to Otto frontend and reboot.
 6. Verify kiosk mode loads frontend and role-specific layout.
 7. Verify backend polling:

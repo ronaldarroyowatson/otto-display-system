@@ -54,7 +54,7 @@ Purpose: Define the mandatory engineering, architecture, deployment, and collabo
 ## PiSignage Orchestration Rules
 
 - Do not modify PiSignage binaries or internal service files.
-- Keep Otto Display System installs isolated under /install/otto-display-system.
+- Keep Otto Display System installs isolated under /opt/otto-display-system.
 - Frontend URL updates for PiSignage must be explicit and reversible.
 - Uninstall must preserve PiSignage installation and configuration.
 
@@ -85,4 +85,6 @@ Purpose: Define the mandatory engineering, architecture, deployment, and collabo
 ## Operational Source of Truth
 
 - Architecture and lifecycle decisions are documented in README.md and mem-palace.md.
+- Live Pi access and connection workflow are documented in docs/dev-pi-access.md.
+- Workspace takeover and phase completion state are documented in docs/workspace-handoff.md.
 - If documentation conflicts with code, update documentation in the same change.

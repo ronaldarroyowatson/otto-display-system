@@ -49,18 +49,27 @@ Standalone vertical display application built on Otto kernel, command service, u
 
 ### Installation Paths
 
-- Otto Display root: /install/otto-display-system
-- Active payload: /install/otto-display-system/current
-- Backups: /install/otto-display-system/backups
+- Otto Display root: /opt/otto-display-system
+- Active payload: /opt/otto-display-system/current
+- Backups: /opt/otto-display-system/backups
 - Frontend publish path: /var/www/otto-display
 
 ### Safety Guarantees
 
 - PiSignage binaries and installation directory are not modified.
 - PiSignage configuration is preserved during install and uninstall.
-- Rollback affects only /install/otto-display-system/current.
+- Rollback affects only /opt/otto-display-system/current.
+- PiSignage directories explicitly untouched:
+   - /home/pi/pisignage
+   - /var/lib/pisignage
+   - /etc/pisignage
 
 ## Raspberry Pi Validation Docs
 
 - Test plan: docs/raspberry-pi-test-plan.md
 - PiSignage-safe checklist: docs/pisignage-safe-checklist.md
+- Installer smoke test: docs/installer-smoke-test.md
+- Live Pi validation: docs/raspberry-pi-live-test.md
+- Deployment checklist: docs/raspberry-pi-deployment-checklist.md
+- Dev Pi access details: docs/dev-pi-access.md
+- Workspace handoff: docs/workspace-handoff.md

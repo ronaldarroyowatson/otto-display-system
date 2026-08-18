@@ -46,11 +46,20 @@ Purpose: Persistent project memory for Otto Display System architecture, workflo
 
 ## Raspberry Pi Deployment Notes
 
-- Install root must remain /install/otto-display-system.
+- Install root must remain /opt/otto-display-system.
 - Web frontend publish path remains separate from PiSignage internals.
 - Auto-update must support cron-driven unattended refreshes.
 - Rollback must restore prior package from local backup archives.
 - Uninstall must remove only Otto Display System assets.
+
+## Live Validation State (2026-08-18)
+
+- Hosted install path validated against `http://192.168.2.23:8090`.
+- Live Pi target validated: `pi@192.168.2.179`.
+- Backend polling validated from Pi to `http://192.168.2.23:4180` endpoints.
+- Hosted uninstall validated with `/opt/otto-display-system` removal.
+- Hosted rollback validated with restore of `/opt/otto-display-system/current`.
+- PiSignage safety policy remains in force: no writes to PiSignage paths.
 
 ## Schedule Logic
 

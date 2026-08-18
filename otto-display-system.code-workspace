@@ -1,0 +1,53 @@
+{
+  "folders": [
+    {
+      "name": "otto-display-system",
+      "path": "."
+    },
+    {
+      "name": "otto-api-extension",
+      "path": "external/otto/otto-api-extension"
+    },
+    {
+      "name": "otto-auth-extension",
+      "path": "external/otto/otto-auth-extension"
+    },
+    {
+      "name": "otto-cli-extension",
+      "path": "external/otto/otto-cli-extension"
+    },
+    {
+      "name": "otto-command-service",
+      "path": "external/otto/otto-command-service"
+    },
+    {
+      "name": "otto-design-system",
+      "path": "external/otto/otto-design-system"
+    },
+    {
+      "name": "otto-kernel",
+      "path": "external/otto/otto-kernel"
+    },
+    {
+      "name": "otto-protocol",
+      "path": "external/otto/otto-protocol"
+    },
+    {
+      "name": "otto-server",
+      "path": "external/otto/otto-server"
+    },
+    {
+      "name": "otto-update",
+      "path": "external/otto/otto-update"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.turbo": true
+    },
+    "search.exclude": {
+      "**/dist": true,
+      "**/node_modules": true
+    }
+  }
+}
