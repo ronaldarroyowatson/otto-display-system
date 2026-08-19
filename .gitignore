@@ -15,6 +15,7 @@ tmp/
 
 # Update package artifacts
 update/dist/
+update/hosted/archives/*.zip
 
 # OS/editor files
 .DS_Store
