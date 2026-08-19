@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UPDATE_BASE_URL="http://192.168.2.23:8090/archives"
+UPDATE_BASE_URL="${OTTO_UPDATE_ARCHIVE_URL:-${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}/archives}"
 INSTALL_ROOT="/opt/otto-display-system"
 BACKUP_ROOT="${INSTALL_ROOT}/backups"
 TARGET_VERSION="${1:-}"

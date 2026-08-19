@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVER_URL="http://192.168.2.23:8090"
+SERVER_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
 INSTALL_ROOT="/opt/otto-display-system"
 CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
 PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 CORE_URL="$SERVER_URL/otto-core-latest.tgz"
-FRONTEND_URL="$SERVER_URL/display/index.html"
+FRONTEND_URL="${OTTO_FRONTEND_URL:-$SERVER_URL/display/index.html}"
 WEB_ROOT="/var/www/otto-display"
 PISIGNAGE_SAFE_PATHS=("/home/pi/pisignage" "/var/lib/pisignage" "/etc/pisignage")
 
@@ -62,10 +62,11 @@ EOF
 cat > "${INSTALL_ROOT}/auto-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+SERVER_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
 INSTALL_ROOT="/opt/otto-display-system"
 CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
-PKG_URL="http://192.168.2.23:8090/otto-display-system-latest.zip"
+PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 
 mkdir -p "$BACKUP_DIR"
 timestamp="$(date +%Y%m%d%H%M%S)"

@@ -15,6 +15,13 @@ This document provides connection details for the development Raspberry Pi used 
 - Hosted artifacts: <http://192.168.2.23:8090>
 - Runtime backend API: <http://192.168.2.23:4180>
 
+## Host Override Controls
+
+- You can override artifact host URLs without editing scripts:
+  - `export OTTO_UPDATE_BASE_URL="http://<host>:8090"`
+  - `export OTTO_UPDATE_ARCHIVE_URL="http://<host>:8090/archives"` (optional)
+  - `export OTTO_FRONTEND_URL="http://<host>:8090/display/index.html"` (optional)
+
 ## SSH Access
 
 - Password auth command:

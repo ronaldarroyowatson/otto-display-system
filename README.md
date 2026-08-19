@@ -47,6 +47,12 @@ Standalone vertical display application built on Otto kernel, command service, u
 - Uninstall script: uninstall-display-system.sh
 - Rollback script: install/otto-display-system/scripts/rollback-display-system.sh
 
+### Deployment URL Overrides
+
+- OTTO_UPDATE_BASE_URL: overrides hosted artifact base URL (default: http://192.168.2.23:8090)
+- OTTO_UPDATE_ARCHIVE_URL: overrides rollback archive URL (default: ${OTTO_UPDATE_BASE_URL}/archives)
+- OTTO_FRONTEND_URL: overrides kiosk frontend URL written to pisignage.json (default: ${OTTO_UPDATE_BASE_URL}/display/index.html)
+
 ### Installation Paths
 
 - Otto Display root: /opt/otto-display-system

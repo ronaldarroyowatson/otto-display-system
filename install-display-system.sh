@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVER_URL="http://192.168.2.23:8090"
+SERVER_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_ROOT="/opt/otto-display-system"
 CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
 PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 CORE_URL="$SERVER_URL/otto-core-latest.tgz"
-FRONTEND_URL="$SERVER_URL/display/index.html"
+FRONTEND_URL="${OTTO_FRONTEND_URL:-$SERVER_URL/display/index.html}"
 WEB_ROOT="/var/www/otto-display"
 PISIGNAGE_SAFE_PATHS=("/home/pi/pisignage" "/var/lib/pisignage" "/etc/pisignage")
 
@@ -24,6 +25,19 @@ done
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is required and was not found. Install Node.js first."
   exit 1
+fi
+
+COMMAND_RUNNER="${SCRIPT_DIR}/tools/run-otto-command.mjs"
+COMMAND_SCHEMAS="${SCRIPT_DIR}/external/otto/otto-command-service/src/schemas"
+if [ -f "$COMMAND_RUNNER" ] && [ -d "$COMMAND_SCHEMAS" ]; then
+  SPACE_JSON="$(node "$COMMAND_RUNNER" file.check.space "targetPath=$INSTALL_ROOT" "minBytes=600000000")"
+  if [[ "$SPACE_JSON" != *'"ok":true'* ]]; then
+    echo "Insufficient disk space for install at $INSTALL_ROOT"
+    echo "$SPACE_JSON"
+    exit 1
+  fi
+
+  node "$COMMAND_RUNNER" file.rotate.logs "directory=$INSTALL_ROOT/logs" "maxFiles=12" "maxBytes=4000000" "activeLogFile=$INSTALL_ROOT/logs/install.log" >/dev/null || true
 fi
 
 if ! command -v pnpm >/dev/null 2>&1; then
@@ -62,10 +76,11 @@ EOF
 cat > "${INSTALL_ROOT}/auto-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+SERVER_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
 INSTALL_ROOT="/opt/otto-display-system"
 CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
-PKG_URL="http://192.168.2.23:8090/otto-display-system-latest.zip"
+PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 
 mkdir -p "$BACKUP_DIR"
 timestamp="$(date +%Y%m%d%H%M%S)"

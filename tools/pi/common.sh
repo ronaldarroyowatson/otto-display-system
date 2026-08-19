@@ -5,6 +5,7 @@ PI_HOST="${PI_HOST:-192.168.2.179}"
 PI_USER="${PI_USER:-pi}"
 PI_PORT="${PI_PORT:-22}"
 PI_PASSWORD="${PI_PASSWORD:-pi}"
+PI_KEY_PATH="${PI_KEY_PATH:-${HOME:-}/.ssh/otto-pi}"
 
 require_command() {
   local cmd="$1"
@@ -21,21 +22,39 @@ check_connectivity() {
   fi
 }
 
+build_ssh_base_args() {
+  local args=()
+
+  if [ -n "${PI_KEY_PATH:-}" ] && [ -f "$PI_KEY_PATH" ]; then
+    args+=( -i "$PI_KEY_PATH" -o IdentitiesOnly=yes )
+  fi
+
+  args+=( -p "$PI_PORT" )
+
+  printf '%s\n' "${args[@]}"
+}
+
 pi_ssh() {
   local remote_cmd="$1"
+  local ssh_args=()
+  mapfile -t ssh_args < <(build_ssh_base_args)
+
   if command -v sshpass >/dev/null 2>&1; then
-    sshpass -p "$PI_PASSWORD" ssh -p "$PI_PORT" "$PI_USER@$PI_HOST" "$remote_cmd"
+    sshpass -p "$PI_PASSWORD" ssh "${ssh_args[@]}" "$PI_USER@$PI_HOST" "$remote_cmd"
   else
-    ssh -p "$PI_PORT" "$PI_USER@$PI_HOST" "$remote_cmd"
+    ssh "${ssh_args[@]}" "$PI_USER@$PI_HOST" "$remote_cmd"
   fi
 }
 
 pi_scp() {
   local src_path="$1"
   local dest_path="$2"
+  local scp_args=()
+  mapfile -t scp_args < <(build_ssh_base_args)
+
   if command -v sshpass >/dev/null 2>&1; then
-    sshpass -p "$PI_PASSWORD" scp -P "$PI_PORT" -r "$src_path" "$PI_USER@$PI_HOST:$dest_path"
+    sshpass -p "$PI_PASSWORD" scp "${scp_args[@]}" -r "$src_path" "$PI_USER@$PI_HOST:$dest_path"
   else
-    scp -P "$PI_PORT" -r "$src_path" "$PI_USER@$PI_HOST:$dest_path"
+    scp "${scp_args[@]}" -r "$src_path" "$PI_USER@$PI_HOST:$dest_path"
   fi
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UPDATE_BASE_URL="http://192.168.2.23:8090"
+UPDATE_BASE_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
 INSTALL_ROOT="/opt/otto-display-system"
 WEB_ROOT="/var/www/otto-display"
 CRON_TAG="otto-display-system/auto-update.sh"

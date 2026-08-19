@@ -2,11 +2,10 @@
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
 import { discoverModules } from '../../runtime-shared/src/module-discovery.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const DEFAULT_API_BASE = process.env.OTTO_API_BASE ?? 'http://127.0.0.1:4180';
-
 function printHelp() {
   const lines = [
     'Otto CLI (display runtime)',
@@ -17,9 +16,12 @@ function printHelp() {
     '  otto display current <role>',
     '  otto calendar refresh',
     '  otto assignments import <file>',
+    '  otto debug last',
+    '  otto debug trace <command>',
+    '  otto debug snapshot',
     '',
     'Environment:',
-    '  OTTO_API_BASE  Base URL for API calls (default: http://127.0.0.1:4180)'
+    '  OTTO_API_BASE  Base URL for API calls (legacy, no longer required for routed commands)'
   ];
   console.log(lines.join('\n'));
 }
@@ -30,14 +32,6 @@ async function listModules(configPathArg) {
     : path.join(ROOT, 'module-loader.config.json');
   const discovered = await discoverModules(ROOT, configPath);
   console.log(JSON.stringify(discovered, null, 2));
-}
-
-async function fetchJson(endpointPath) {
-  const response = await fetch(`${DEFAULT_API_BASE}${endpointPath}`);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-  }
-  return response.json();
 }
 
 async function run() {
@@ -55,23 +49,48 @@ async function run() {
   }
 
   if (args[0] === 'display' && args[1] === 'current' && args[2]) {
-    const payload = await fetchJson(`/display/${args[2]}/current`);
+    const payload = await executeRoutedCommand('display.current', { role: args[2] });
     console.log(JSON.stringify(payload, null, 2));
     return;
   }
 
   if (args[0] === 'calendar' && args[1] === 'refresh') {
-    const payload = await fetchJson('/content/calendar.json');
+    const payload = await executeRoutedCommand('calendar.refresh');
     console.log(JSON.stringify(payload, null, 2));
     return;
   }
 
   if (args[0] === 'assignments' && args[1] === 'import' && args[2]) {
-    const payload = await fetchJson('/content/assignments.json');
+    const payload = await executeRoutedCommand('assignments.import', { file: path.resolve(process.cwd(), args[2]) });
     console.log(JSON.stringify({
       inputFile: path.resolve(process.cwd(), args[2]),
       result: payload
     }, null, 2));
+    return;
+  }
+
+  if (args[0] === 'debug' && args[1] === 'last') {
+    const payload = await executeRoutedCommand('debug.report.last-run');
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  if (args[0] === 'debug' && args[1] === 'trace' && args[2]) {
+    const payload = await executeRoutedCommand('debug.trace.command', {
+      command: args.slice(2).join(' '),
+      status: 'ok',
+      verbose: true
+    });
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  if (args[0] === 'debug' && args[1] === 'snapshot') {
+    const payload = await executeRoutedCommand('debug.snapshot.system', {
+      includeMemory: true,
+      includeEnv: true
+    });
+    console.log(JSON.stringify(payload, null, 2));
     return;
   }
 

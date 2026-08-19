@@ -14,6 +14,36 @@
       "id": "assignments.import",
       "description": "Import FACTS assignment CSV and normalize records.",
       "module": "display-assignments"
+    },
+    {
+      "id": "debug.report.last-run",
+      "description": "Return the most recent routed debug summary.",
+      "module": "otto-debug-extension"
+    },
+    {
+      "id": "debug.trace.command",
+      "description": "Record command-level debug traces through command service routing.",
+      "module": "otto-debug-extension"
+    },
+    {
+      "id": "debug.trace.api",
+      "description": "Record external API trace events through command service routing.",
+      "module": "otto-debug-extension"
+    },
+    {
+      "id": "debug.snapshot.system",
+      "description": "Capture a runtime system snapshot for support and diagnostics.",
+      "module": "otto-debug-extension"
+    },
+    {
+      "id": "file.check.space",
+      "description": "Preflight free-space checks for install and update operations.",
+      "module": "otto-file-extension"
+    },
+    {
+      "id": "file.rotate.logs",
+      "description": "Rotate logs for runtime and update workflows.",
+      "module": "otto-file-extension"
     }
   ]
 }

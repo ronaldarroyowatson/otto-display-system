@@ -26,5 +26,15 @@ Thumbs.db
 .env.*
 !.env.example
 
+# SSH and security secrets
+.ssh/
+**/.ssh/
+**/id_*
+**/*.pem
+**/*.key
+**/*.pub
+**/authorized_keys
+**/known_hosts
+
 # Keep cloned Otto repositories but ignore nested git metadata
 external/otto/**/.git/
