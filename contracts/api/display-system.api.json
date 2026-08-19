@@ -34,6 +34,16 @@
       "method": "POST",
       "route": "/debug/snapshot",
       "command": "debug.snapshot.system"
+    },
+    {
+      "method": "GET",
+      "route": "/eds/registry",
+      "command": "eds.get.registry"
+    },
+    {
+      "method": "GET",
+      "route": "/eds/extension/:name",
+      "command": "eds.get.extension"
     }
   ]
 }

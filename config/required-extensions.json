@@ -1,0 +1,9 @@
+{
+  "displayRuntime": [
+    "connection-extension",
+    "logging-extension",
+    "file-extension",
+    "debug-extension",
+    "display-api-interface"
+  ]
+}

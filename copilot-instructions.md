@@ -88,3 +88,10 @@ Purpose: Define the mandatory engineering, architecture, deployment, and collabo
 - Live Pi access and connection workflow are documented in docs/dev-pi-access.md.
 - Workspace takeover and phase completion state are documented in docs/workspace-handoff.md.
 - If documentation conflicts with code, update documentation in the same change.
+
+## Extension Discovery Rules (Option C)
+
+- Global extension awareness must come from `otto-extension-index`.
+- Local runtime truth must come from Otto Kernel EDS.
+- Runtime, CLI, and display-system workflows must prefer EDS over hardcoded extension references.
+- EDS commands and endpoints must always be routed through the Otto Command Service Layer.

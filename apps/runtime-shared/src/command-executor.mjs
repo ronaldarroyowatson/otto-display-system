@@ -26,17 +26,27 @@ async function loadSchemas() {
 }
 
 async function executeRoutedCommandInternal(commandName, payload = {}, enableTrace = true) {
+  let normalizedCommand = commandName;
+  let normalizedPayload = payload;
+  if (commandName.startsWith('eds.get.extension.') && commandName !== 'eds.get.extension.<name>') {
+    normalizedCommand = 'eds.get.extension';
+    normalizedPayload = {
+      ...payload,
+      name: commandName.slice('eds.get.extension.'.length)
+    };
+  }
+
   const schemas = await loadSchemas();
-  const schema = schemas.find((entry) => entry.name === commandName);
+  const schema = schemas.find((entry) => entry.name === normalizedCommand);
   if (!schema) {
     throw new Error(`Unknown command: ${commandName}`);
   }
 
-  const shouldTrace = enableTrace && !commandName.startsWith('debug.');
+  const shouldTrace = enableTrace && !normalizedCommand.startsWith('debug.');
   if (shouldTrace) {
     try {
       await executeRoutedCommandInternal('debug.trace.command', {
-        command: commandName,
+          command: normalizedCommand,
         status: 'start'
       }, false);
     } catch {
@@ -53,11 +63,11 @@ async function executeRoutedCommandInternal(commandName, payload = {}, enableTra
   }
 
   try {
-    const result = await handler(payload);
+    const result = await handler(normalizedPayload);
     if (shouldTrace) {
       try {
         await executeRoutedCommandInternal('debug.trace.command', {
-          command: commandName,
+          command: normalizedCommand,
           status: 'ok'
         }, false);
       } catch {
@@ -69,7 +79,7 @@ async function executeRoutedCommandInternal(commandName, payload = {}, enableTra
     if (shouldTrace) {
       try {
         await executeRoutedCommandInternal('debug.trace.command', {
-          command: commandName,
+          command: normalizedCommand,
           status: 'error',
           details: error instanceof Error ? error.message : String(error)
         }, false);

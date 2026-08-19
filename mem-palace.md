@@ -81,3 +81,10 @@ Purpose: Persistent project memory for Otto Display System architecture, workflo
 - Expand auth providers for district SSO standards.
 - Add richer schedule-aware content slots and role-based policy engine.
 - Promote single-Pi test workflow to fleet rollout playbook with canary update channels.
+
+## Option C Architecture (2026-08-19)
+
+- Global extension truth is maintained in `otto-extension-index` (cross-org index repo).
+- Local workspace truth is maintained by Otto Kernel EDS and written to `runtime/extension-registry.json`.
+- Runtime, CLI, and display-system extension lookups should use EDS, not hardcoded extension wiring.
+- Command/API access for EDS is routed through command-service contracts (`eds.*`).

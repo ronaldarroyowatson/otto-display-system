@@ -4,15 +4,18 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
-import { discoverModules } from '../../runtime-shared/src/module-discovery.mjs';
+import { discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
 
 const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
+const REQUIRED_EXTENSIONS_CONFIG = path.join(ROOT, 'config', 'required-extensions.json');
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
+const requiredExtensionsConfig = await fs.readFile(REQUIRED_EXTENSIONS_CONFIG, 'utf8').then((content) => JSON.parse(content)).catch(() => ({ displayRuntime: [] }));
+const requiredExtensions = await discoverRequiredExtensions(ROOT, requiredExtensionsConfig.displayRuntime ?? []);
 
 await executeRoutedCommand('file.rotate.logs', {
   directory: path.join(ROOT, 'logs'),
@@ -103,7 +106,28 @@ const server = http.createServer(async (request, response) => {
 
   if (request.method === 'GET' && url.pathname === '/modules') {
     await traceApi(request.method, url.pathname, 200);
-    sendJson(response, 200, discoveredModules);
+    sendJson(response, 200, {
+      ...discoveredModules,
+      requiredExtensions
+    });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/eds/registry') {
+    const payload = await executeRoutedCommand('eds.get.registry', { workspaceRoot: ROOT });
+    await traceApi(request.method, url.pathname, 200);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  const edsExtensionMatch = /^\/eds\/extension\/([^/]+)$/.exec(url.pathname);
+  if (request.method === 'GET' && edsExtensionMatch) {
+    const extensionName = decodeURIComponent(edsExtensionMatch[1]);
+    const payload = await executeRoutedCommand(`eds.get.extension.${extensionName}`, {
+      workspaceRoot: ROOT
+    });
+    await traceApi(request.method, url.pathname, 200);
+    sendJson(response, 200, payload);
     return;
   }
 

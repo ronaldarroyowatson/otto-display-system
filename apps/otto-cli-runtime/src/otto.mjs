@@ -16,6 +16,8 @@ function printHelp() {
     '  otto display current <role>',
     '  otto calendar refresh',
     '  otto assignments import <file>',
+    '  otto eds registry',
+    '  otto eds extension <name>',
     '  otto debug last',
     '  otto debug trace <command>',
     '  otto debug snapshot',
@@ -66,6 +68,20 @@ async function run() {
       inputFile: path.resolve(process.cwd(), args[2]),
       result: payload
     }, null, 2));
+    return;
+  }
+
+  if (args[0] === 'eds' && args[1] === 'registry') {
+    const payload = await executeRoutedCommand('eds.get.registry', { workspaceRoot: ROOT });
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  if (args[0] === 'eds' && args[1] === 'extension' && args[2]) {
+    const payload = await executeRoutedCommand(`eds.get.extension.${args[2]}`, {
+      workspaceRoot: ROOT
+    });
+    console.log(JSON.stringify(payload, null, 2));
     return;
   }
 

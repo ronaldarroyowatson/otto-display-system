@@ -44,6 +44,21 @@
       "id": "file.rotate.logs",
       "description": "Rotate logs for runtime and update workflows.",
       "module": "otto-file-extension"
+    },
+    {
+      "id": "eds.scan",
+      "description": "Scan local workspace extension roots and rebuild EDS registry.",
+      "module": "otto-kernel"
+    },
+    {
+      "id": "eds.get.registry",
+      "description": "Return unified local extension registry for runtime and CLI.",
+      "module": "otto-kernel"
+    },
+    {
+      "id": "eds.get.extension.<name>",
+      "description": "Template contract for extension-specific EDS lookups.",
+      "module": "otto-kernel"
     }
   ]
 }
