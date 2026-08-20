@@ -45,6 +45,14 @@ EDS is exposed through command-service-routed internal commands:
 - `eds.get.extension`
 - `eds.get.extension.<name>` (template alias contract)
 
+## Dependency Index
+
+EDS also reads the generated meta-repo dependency snapshot:
+
+- `external/otto/otto-extension-index/dependencies.json`
+
+That file drives dependency validation, required-extension lookup, and version constraint checks for the local workspace registry.
+
 ## API Endpoints Through Command Service Layer
 
 - `GET /eds/registry`

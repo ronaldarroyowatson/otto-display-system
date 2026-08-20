@@ -92,6 +92,7 @@ Purpose: Define the mandatory engineering, architecture, deployment, and collabo
 ## Extension Discovery Rules (Option C)
 
 - Global extension awareness must come from `otto-extension-index`.
+- Global dependency awareness must come from `external/otto/otto-extension-index/dependencies.json`.
 - Local runtime truth must come from Otto Kernel EDS.
-- Runtime, CLI, and display-system workflows must prefer EDS over hardcoded extension references.
+- Runtime, CLI, and display-system workflows must prefer EDS over hardcoded extension references and static dependency lists.
 - EDS commands and endpoints must always be routed through the Otto Command Service Layer.

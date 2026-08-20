@@ -11,11 +11,9 @@ const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
-const REQUIRED_EXTENSIONS_CONFIG = path.join(ROOT, 'config', 'required-extensions.json');
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
-const requiredExtensionsConfig = await fs.readFile(REQUIRED_EXTENSIONS_CONFIG, 'utf8').then((content) => JSON.parse(content)).catch(() => ({ displayRuntime: [] }));
-const requiredExtensions = await discoverRequiredExtensions(ROOT, requiredExtensionsConfig.displayRuntime ?? []);
+const requiredExtensions = await discoverRequiredExtensions(ROOT);
 
 await executeRoutedCommand('file.rotate.logs', {
   directory: path.join(ROOT, 'logs'),

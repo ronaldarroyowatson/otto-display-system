@@ -2,6 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { executeRoutedCommand } from './command-executor.mjs';
 
+function uniqueSorted(values) {
+  return [...new Set(values.filter(Boolean))].sort((left, right) => String(left).localeCompare(String(right)));
+}
+
 export async function readJson(filePath) {
   const content = await fs.readFile(filePath, 'utf8');
   return JSON.parse(content.replace(/^\uFEFF/, ''));
@@ -18,10 +22,13 @@ export async function discoverModules(rootPath, configPath) {
         configPath,
         moduleCount: registry.extensions.length,
         modules: registry.extensions.map((entry) => ({
-          id: entry.name,
-          location: entry.path
+          id: entry.id ?? entry.name,
+          name: entry.name,
+          location: entry.path,
+          dependencies: entry.dependencyMetadata ?? null
         })),
-        source: 'eds'
+        source: 'eds',
+        dependencyValidation: registry.dependencyValidation ?? null
       };
     }
   } catch {
@@ -68,8 +75,26 @@ export async function discoverModules(rootPath, configPath) {
 }
 
 export async function discoverRequiredExtensions(rootPath, extensionNames) {
+  let resolvedExtensionNames = Array.isArray(extensionNames) ? extensionNames : [];
+
+  if (resolvedExtensionNames.length === 0) {
+    try {
+      const registry = await executeRoutedCommand('eds.get.registry', {
+        workspaceRoot: rootPath
+      });
+
+      if (registry && Array.isArray(registry.extensions)) {
+        resolvedExtensionNames = uniqueSorted(
+          registry.extensions.flatMap((entry) => entry?.dependencyMetadata?.requiredExtensions ?? [])
+        );
+      }
+    } catch {
+      resolvedExtensionNames = [];
+    }
+  }
+
   const resolved = [];
-  for (const extensionName of extensionNames) {
+  for (const extensionName of resolvedExtensionNames) {
     try {
       const result = await executeRoutedCommand(`eds.get.extension.${extensionName}`, {
         workspaceRoot: rootPath
@@ -78,13 +103,17 @@ export async function discoverRequiredExtensions(rootPath, extensionNames) {
       resolved.push({
         name: extensionName,
         found: Boolean(result?.found),
-        extension: result?.extension ?? null
+        extension: result?.extension ?? null,
+        dependencyMetadata: result?.extension?.dependencyMetadata ?? null,
+        dependencyValidation: result?.extension?.dependencyValidation ?? null
       });
     } catch {
       resolved.push({
         name: extensionName,
         found: false,
-        extension: null
+        extension: null,
+        dependencyMetadata: null,
+        dependencyValidation: null
       });
     }
   }

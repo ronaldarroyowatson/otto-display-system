@@ -12,6 +12,7 @@ coverage/
 *.log
 .tmp/
 tmp/
+runtime/extension-registry.json
 
 # Update package artifacts
 update/dist/
