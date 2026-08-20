@@ -1,6 +1,8 @@
 ﻿# otto-display-system
 
-Standalone vertical display application built on Otto kernel, command service, update engine, API/CLI/auth extensions, and design system.
+Standalone vertical display application built on Otto kernel,
+command service, update engine, API/CLI/auth extensions,
+and design system.
 
 ## Workspace Layout
 
@@ -9,22 +11,29 @@ Standalone vertical display application built on Otto kernel, command service, u
 - apps: local runtime helpers (CLI wrapper and display runtime server)
 - tools: update and install scripts
 - schemas: shared JSON schemas for display data
-- install/otto-display-system: deployment-safe install assets and rollback scripts
+- install/otto-display-system: deployment-safe install assets and
+  rollback scripts
 - docs: deployment runbooks and checklists
 
 ## Copilot and MemPalace Provenance
 
-- Copilot instructions source: curated Ronald Otto standards authored for this repository and consolidated into copilot-instructions.md.
-- MemPalace source: curated Ronald Otto architecture and deployment memory for this repository and consolidated into mem-palace.md.
+- Copilot instructions source: curated Ronald Otto standards authored for this
+  repository and consolidated into copilot-instructions.md.
+- MemPalace source: curated Ronald Otto architecture and deployment memory for
+  this repository and consolidated into mem-palace.md.
 - Creation timestamp: 2026-08-18T00:00:00Z.
 - Purpose:
-  - copilot-instructions.md defines mandatory engineering and deployment behavior for agents and contributors.
-  - mem-palace.md records long-term architecture, deployment constraints, and migration goals.
+  - copilot-instructions.md defines mandatory engineering and deployment
+    behavior for agents and contributors.
+  - mem-palace.md records long-term architecture, deployment constraints,
+    and migration goals.
 
 ## Agent Loading Rules
 
-- Agents must read copilot-instructions.md and mem-palace.md before major changes.
-- Agents must update both files when architecture or deployment policy changes.
+- Agents must read copilot-instructions.md and mem-palace.md before major
+  changes.
+- Agents must update both files when architecture or deployment policy
+  changes.
 
 ## Quick Start
 
@@ -39,19 +48,24 @@ Standalone vertical display application built on Otto kernel, command service, u
    - node apps/display-runtime/src/server.mjs
 5. Build update package:
 
-   - powershell -ExecutionPolicy Bypass -File tools/build-update-package.ps1 -Version 0.1.0
+   - powershell -ExecutionPolicy Bypass -File
+     tools/build-update-package.ps1 -Version 0.1.0
 
 ## Installer Workflow
 
 - One-line installer script: install-display-system.sh
 - Uninstall script: uninstall-display-system.sh
-- Rollback script: install/otto-display-system/scripts/rollback-display-system.sh
+- Rollback script:
+  install/otto-display-system/scripts/rollback-display-system.sh
 
 ### Deployment URL Overrides
 
-- OTTO_UPDATE_BASE_URL: overrides hosted artifact base URL (default: http://192.168.2.23:8090)
-- OTTO_UPDATE_ARCHIVE_URL: overrides rollback archive URL (default: ${OTTO_UPDATE_BASE_URL}/archives)
-- OTTO_FRONTEND_URL: overrides kiosk frontend URL written to pisignage.json (default: ${OTTO_UPDATE_BASE_URL}/display/index.html)
+- OTTO_UPDATE_BASE_URL: overrides hosted artifact base URL
+  (default: <http://192.168.2.23:8090>)
+- OTTO_UPDATE_ARCHIVE_URL: overrides rollback archive URL
+  (default: ${OTTO_UPDATE_BASE_URL}/archives)
+- OTTO_FRONTEND_URL: overrides kiosk frontend URL written to pisignage.json
+  (default: ${OTTO_UPDATE_BASE_URL}/display/index.html)
 
 ### Installation Paths
 
@@ -66,9 +80,9 @@ Standalone vertical display application built on Otto kernel, command service, u
 - PiSignage configuration is preserved during install and uninstall.
 - Rollback affects only /opt/otto-display-system/current.
 - PiSignage directories explicitly untouched:
-   - /home/pi/pisignage
-   - /var/lib/pisignage
-   - /etc/pisignage
+  - /home/pi/pisignage
+  - /var/lib/pisignage
+  - /etc/pisignage
 
 ## Raspberry Pi Validation Docs
 
