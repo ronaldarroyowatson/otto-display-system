@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
-import { discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
+import { discoverExtensionDependencyGraph, discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
 
 const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
@@ -13,6 +13,7 @@ const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
+const dependencyGraph = await discoverExtensionDependencyGraph(ROOT);
 const requiredExtensions = await discoverRequiredExtensions(ROOT);
 
 await executeRoutedCommand('file.rotate.logs', {
@@ -106,6 +107,7 @@ const server = http.createServer(async (request, response) => {
     await traceApi(request.method, url.pathname, 200);
     sendJson(response, 200, {
       ...discoveredModules,
+      dependencyGraph,
       requiredExtensions
     });
     return;

@@ -25,7 +25,8 @@ export async function discoverModules(rootPath, configPath) {
           id: entry.id ?? entry.name,
           name: entry.name,
           location: entry.path,
-          dependencies: entry.dependencyMetadata ?? null
+          dependencies: entry.dependencyMetadata ?? null,
+          dependencyValidation: entry.dependencyValidation ?? null
         })),
         source: 'eds',
         dependencyValidation: registry.dependencyValidation ?? null
@@ -74,27 +75,58 @@ export async function discoverModules(rootPath, configPath) {
   };
 }
 
-export async function discoverRequiredExtensions(rootPath, extensionNames) {
-  let resolvedExtensionNames = Array.isArray(extensionNames) ? extensionNames : [];
+export async function discoverExtensionDependencyGraph(rootPath, extensionNames) {
+  try {
+    const registry = await executeRoutedCommand('eds.get.registry', {
+      workspaceRoot: rootPath
+    });
 
-  if (resolvedExtensionNames.length === 0) {
-    try {
-      const registry = await executeRoutedCommand('eds.get.registry', {
-        workspaceRoot: rootPath
-      });
-
-      if (registry && Array.isArray(registry.extensions)) {
-        resolvedExtensionNames = uniqueSorted(
-          registry.extensions.flatMap((entry) => entry?.dependencyMetadata?.requiredExtensions ?? [])
-        );
-      }
-    } catch {
-      resolvedExtensionNames = [];
+    if (!registry || !Array.isArray(registry.extensions)) {
+      throw new Error('EDS registry unavailable');
     }
-  }
 
+    const requestedNames = Array.isArray(extensionNames) && extensionNames.length > 0
+      ? new Set(extensionNames)
+      : null;
+
+    const records = registry.extensions
+      .filter((entry) => !requestedNames || requestedNames.has(entry.id) || requestedNames.has(entry.name))
+      .map((entry) => ({
+        id: entry.id ?? entry.name,
+        name: entry.name,
+        path: entry.path,
+        requiredExtensions: entry.dependencyMetadata?.requiredExtensions ?? [],
+        optionalExtensions: entry.dependencyMetadata?.optionalExtensions ?? [],
+        dependencyMetadata: entry.dependencyMetadata ?? null,
+        dependencyValidation: entry.dependencyValidation ?? null
+      }));
+
+    return {
+      source: 'eds',
+      dependencyIndexPath: registry.dependencyIndexPath ?? null,
+      dependencyIndexGeneratedAt: registry.dependencyIndexGeneratedAt ?? null,
+      dependencyValidation: registry.dependencyValidation ?? null,
+      requiredExtensions: [...new Set(records.flatMap((entry) => entry.requiredExtensions))].sort(),
+      optionalExtensions: [...new Set(records.flatMap((entry) => entry.optionalExtensions))].sort(),
+      records
+    };
+  } catch {
+    return {
+      source: 'module-loader',
+      dependencyIndexPath: null,
+      dependencyIndexGeneratedAt: null,
+      dependencyValidation: null,
+      requiredExtensions: [],
+      optionalExtensions: [],
+      records: []
+    };
+  }
+}
+
+export async function discoverRequiredExtensions(rootPath, extensionNames) {
+  const dependencyGraph = await discoverExtensionDependencyGraph(rootPath, extensionNames);
   const resolved = [];
-  for (const extensionName of resolvedExtensionNames) {
+  for (const extensionName of dependencyGraph.requiredExtensions) {
     try {
       const result = await executeRoutedCommand(`eds.get.extension.${extensionName}`, {
         workspaceRoot: rootPath
