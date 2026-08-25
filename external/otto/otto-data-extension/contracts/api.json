@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "module": "otto.data.extension",
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/data/blob",
+      "command": "data.scan"
+    },
+    {
+      "method": "GET",
+      "route": "/data/package",
+      "command": "data.package"
+    },
+    {
+      "method": "GET",
+      "route": "/data/scan",
+      "command": "data.refresh"
+    }
+  ]
+}

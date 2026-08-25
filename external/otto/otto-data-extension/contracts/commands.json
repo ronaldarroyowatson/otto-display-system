@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "module": "otto.data.extension",
+  "commands": [
+    {
+      "id": "data.scan",
+      "description": "Scan and index data payload metadata.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "data.refresh",
+      "description": "Refresh data package metadata and export summary.",
+      "parameters": []
+    },
+    {
+      "id": "data.package",
+      "description": "Create or update a packaged data artifact.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

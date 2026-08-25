@@ -21,6 +21,10 @@
       "path": "external/otto/otto-command-service"
     },
     {
+      "name": "otto-data-extension",
+      "path": "external/otto/otto-data-extension"
+    },
+    {
       "name": "otto-design-system",
       "path": "external/otto/otto-design-system"
     },

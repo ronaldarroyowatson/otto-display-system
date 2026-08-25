@@ -2,6 +2,7 @@
   "$schema": "./config/module-loader.schema.json",
   "moduleSearchPaths": [
     "external/otto",
+    "external/otto/otto-data-extension",
     "modules",
     "packages"
   ],
