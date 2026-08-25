@@ -11,7 +11,7 @@
 - If deployment host changed, set override env vars before running scripts:
   - `export OTTO_UPDATE_BASE_URL="http://<host>:8090"`
   - `export OTTO_UPDATE_ARCHIVE_URL="http://<host>:8090/archives"` (optional)
-  - `export OTTO_FRONTEND_URL="http://<host>:8090/display/index.html"` (optional)
+  - `export OTTO_FRONTEND_URL="http://<host>:8080/display"` (optional)
 - Confirm hosted artifacts are reachable:
   - install-display-system.sh
   - otto-display-system-latest.zip

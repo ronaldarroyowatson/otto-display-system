@@ -5,6 +5,7 @@ UPDATE_BASE_URL="${OTTO_UPDATE_ARCHIVE_URL:-${OTTO_UPDATE_BASE_URL:-http://192.1
 INSTALL_ROOT="/opt/otto-display-system"
 BACKUP_ROOT="${INSTALL_ROOT}/backups"
 TARGET_VERSION="${1:-}"
+SERVICE_NAME="otto-display-system"
 
 if [ -z "${TARGET_VERSION}" ]; then
   echo "Usage: rollback-display-system.sh <version>"
@@ -20,4 +21,7 @@ fi
 
 echo "Rolling back Otto Display System to version ${TARGET_VERSION}"
 unzip -o "${BACKUP_FILE}" -d "${INSTALL_ROOT}/current"
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl restart "$SERVICE_NAME" >/dev/null 2>&1 || true
+fi
 echo "Rollback complete."

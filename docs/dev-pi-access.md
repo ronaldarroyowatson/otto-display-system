@@ -20,7 +20,7 @@ This document provides connection details for the development Raspberry Pi used 
 - You can override artifact host URLs without editing scripts:
   - `export OTTO_UPDATE_BASE_URL="http://<host>:8090"`
   - `export OTTO_UPDATE_ARCHIVE_URL="http://<host>:8090/archives"` (optional)
-  - `export OTTO_FRONTEND_URL="http://<host>:8090/display/index.html"` (optional)
+  - `export OTTO_FRONTEND_URL="http://<host>:8080/display"` (optional)
 
 ## SSH Access
 

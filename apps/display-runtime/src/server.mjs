@@ -66,7 +66,8 @@ async function readJsonBody(request) {
 }
 
 async function serveStatic(response, reqPath) {
-  const safePath = reqPath === '/' ? '/index.html' : reqPath;
+  const serveIndex = reqPath === '/' || reqPath === '/display' || reqPath === '/display/' || reqPath === '/display/index.html';
+  const safePath = serveIndex ? '/index.html' : reqPath;
   const filePath = path.normalize(path.join(FRONTEND_DIR, safePath));
   if (!filePath.startsWith(FRONTEND_DIR)) {
     response.statusCode = 403;
@@ -100,6 +101,11 @@ const server = http.createServer(async (request, response) => {
       status: 'ok',
       moduleCount: discoveredModules.moduleCount
     });
+    return;
+  }
+
+  if (request.method === 'GET' && (url.pathname === '/display' || url.pathname === '/display/' || url.pathname === '/display/index.html')) {
+    await serveStatic(response, '/display');
     return;
   }
 

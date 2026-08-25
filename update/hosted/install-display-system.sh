@@ -7,9 +7,17 @@ CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
 PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 CORE_URL="$SERVER_URL/otto-core-latest.tgz"
-FRONTEND_URL="${OTTO_FRONTEND_URL:-$SERVER_URL/display/index.html}"
+PI_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [ -z "$PI_HOST" ]; then
+  PI_HOST="127.0.0.1"
+fi
+FRONTEND_URL="${OTTO_FRONTEND_URL:-http://${PI_HOST}:8080/display}"
 WEB_ROOT="/var/www/otto-display"
 PISIGNAGE_SAFE_PATHS=("/home/pi/pisignage" "/var/lib/pisignage" "/etc/pisignage")
+SERVICE_NAME="otto-display-system"
+SERVICE_USER="otto-display-system"
+SERVICE_GROUP="otto-display-system"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "Installing Otto Display System..."
 mkdir -p "$CURRENT_DIR" "$BACKUP_DIR"
@@ -35,6 +43,10 @@ if ! command -v unzip >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! id -u "$SERVICE_USER" >/dev/null 2>&1; then
+  useradd --system --home "$INSTALL_ROOT" --shell /usr/sbin/nologin --user-group "$SERVICE_USER"
+fi
+
 timestamp="$(date +%Y%m%d%H%M%S)"
 if [ -f "${INSTALL_ROOT}/otto-display-system.zip" ]; then
   mv "${INSTALL_ROOT}/otto-display-system.zip" "${BACKUP_DIR}/otto-display-system-${timestamp}.zip"
@@ -58,6 +70,40 @@ cat > "${CURRENT_DIR}/config/pisignage.json" <<EOF
   "frontendUrl": "$FRONTEND_URL"
 }
 EOF
+
+install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_GROUP" /var/log/otto-display-system
+cat > "$SERVICE_FILE" <<EOF
+[Unit]
+Description=Otto Display System Runtime
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_GROUP}
+WorkingDirectory=${CURRENT_DIR}
+Environment=OTTO_DISPLAY_HOST=0.0.0.0
+Environment=OTTO_DISPLAY_PORT=8080
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env node apps/display-runtime/src/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=${INSTALL_ROOT} /var/log/otto-display-system
+LogsDirectory=otto-display-system
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload
+  systemctl enable --now "$SERVICE_NAME"
+fi
 
 cat > "${INSTALL_ROOT}/auto-update.sh" <<'EOF'
 #!/usr/bin/env bash

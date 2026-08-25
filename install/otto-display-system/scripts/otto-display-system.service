@@ -1,0 +1,25 @@
+[Unit]
+Description=Otto Display System Runtime
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=otto-display-system
+Group=otto-display-system
+WorkingDirectory=/opt/otto-display-system/current
+Environment=OTTO_DISPLAY_HOST=0.0.0.0
+Environment=OTTO_DISPLAY_PORT=8080
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env node apps/display-runtime/src/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/opt/otto-display-system /var/log/otto-display-system
+LogsDirectory=otto-display-system
+
+[Install]
+WantedBy=multi-user.target

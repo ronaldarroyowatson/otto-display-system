@@ -6,6 +6,8 @@ INSTALL_ROOT="/opt/otto-display-system"
 WEB_ROOT="/var/www/otto-display"
 CRON_TAG="otto-display-system/auto-update.sh"
 PISIGNAGE_SAFE_PATHS=("/home/pi/pisignage" "/var/lib/pisignage" "/etc/pisignage")
+SERVICE_NAME="otto-display-system"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "Uninstalling Otto Display System from ${INSTALL_ROOT}"
 
@@ -16,8 +18,15 @@ if command -v crontab >/dev/null 2>&1; then
   fi
 fi
 
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
+  rm -f "$SERVICE_FILE"
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
 rm -rf "${INSTALL_ROOT}"
 rm -rf "${WEB_ROOT}"
+rm -rf /var/log/otto-display-system
 
 for path in "${PISIGNAGE_SAFE_PATHS[@]}"; do
   if [ -e "$path" ]; then
