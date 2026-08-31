@@ -1,0 +1,9 @@
+{
+  "at": "2026-08-25T18:39:52.087Z",
+  "type": "command",
+  "data": {
+    "command": "file.rotate.logs",
+    "status": "ok",
+    "details": null
+  }
+}

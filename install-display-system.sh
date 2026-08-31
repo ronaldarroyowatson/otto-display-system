@@ -16,8 +16,6 @@ FRONTEND_URL="${OTTO_FRONTEND_URL:-http://${PI_HOST}:8080/display}"
 WEB_ROOT="/var/www/otto-display"
 PISIGNAGE_SAFE_PATHS=("/home/pi/pisignage" "/var/lib/pisignage" "/etc/pisignage")
 SERVICE_NAME="otto-display-system"
-SERVICE_USER="otto-display-system"
-SERVICE_GROUP="otto-display-system"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "Installing Otto Display System..."
@@ -57,10 +55,6 @@ if ! command -v unzip >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! id -u "$SERVICE_USER" >/dev/null 2>&1; then
-  useradd --system --home "$INSTALL_ROOT" --shell /usr/sbin/nologin --user-group "$SERVICE_USER"
-fi
-
 timestamp="$(date +%Y%m%d%H%M%S)"
 if [ -f "${INSTALL_ROOT}/otto-display-system.zip" ]; then
   mv "${INSTALL_ROOT}/otto-display-system.zip" "${BACKUP_DIR}/otto-display-system-${timestamp}.zip"
@@ -85,7 +79,6 @@ cat > "${CURRENT_DIR}/config/pisignage.json" <<EOF
 }
 EOF
 
-install -d -m 755 -o "$SERVICE_USER" -g "$SERVICE_GROUP" /var/log/otto-display-system
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=Otto Display System Runtime
@@ -94,8 +87,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=${SERVICE_USER}
-Group=${SERVICE_GROUP}
 WorkingDirectory=${CURRENT_DIR}
 Environment=OTTO_DISPLAY_HOST=0.0.0.0
 Environment=OTTO_DISPLAY_PORT=8080

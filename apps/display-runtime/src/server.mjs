@@ -6,6 +6,51 @@ import { fileURLToPath } from 'node:url';
 import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
 import { discoverExtensionDependencyGraph, discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
 
+function mergeDesignThemeConfig(baseConfig, designConfig) {
+  const nextConfig = JSON.parse(JSON.stringify(baseConfig));
+  const themeMap = nextConfig.themes ?? {};
+
+  for (const themeName of Object.keys(themeMap)) {
+    const theme = themeMap[themeName];
+    if (!theme || typeof theme !== 'object') {
+      continue;
+    }
+
+    const colors = theme.colors ?? {};
+    const fonts = theme.fonts ?? {};
+    const motion = theme.motion ?? {};
+
+    if (designConfig?.colors?.primary) {
+      colors.accent = colors.accent ?? designConfig.colors.primary;
+    }
+    if (designConfig?.colors?.surface) {
+      colors.surface = designConfig.colors.surface;
+    }
+    if (designConfig?.colors?.text) {
+      colors.text = designConfig.colors.text;
+    }
+    if (designConfig?.typography?.families?.body) {
+      fonts.body = designConfig.typography.families.body;
+      fonts.heading = designConfig.typography.families.body;
+    }
+    if (designConfig?.motion?.durations?.normal) {
+      const curve = designConfig.motion.curves?.standard ?? 'ease';
+      motion.page = `${designConfig.motion.durations.normal}ms ${curve}`;
+    }
+
+    theme.colors = colors;
+    theme.fonts = fonts;
+    theme.motion = motion;
+  }
+
+  nextConfig.dsc = {
+    ...(nextConfig.dsc ?? {}),
+    theme: nextConfig.dsc?.theme ?? 'midnight'
+  };
+
+  return nextConfig;
+}
+
 const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -65,9 +110,24 @@ async function readJsonBody(request) {
   return raw ? JSON.parse(raw) : {};
 }
 
+async function resolveFrontendAssetPath(reqPath) {
+  if (reqPath === '/' || reqPath === '/display' || reqPath === '/display/' || reqPath === '/display/index.html') {
+    return '/index.html';
+  }
+
+  if (/^\/display(?:\/[^/]+){1,2}$/.test(reqPath)) {
+    const trailing = reqPath.split('/').filter(Boolean).slice(1).at(-1) ?? '';
+    if (trailing.includes('.')) {
+      return `/${trailing}`;
+    }
+    return '/index.html';
+  }
+
+  return reqPath;
+}
+
 async function serveStatic(response, reqPath) {
-  const serveIndex = reqPath === '/' || reqPath === '/display' || reqPath === '/display/' || reqPath === '/display/index.html';
-  const safePath = serveIndex ? '/index.html' : reqPath;
+  const safePath = await resolveFrontendAssetPath(reqPath);
   const filePath = path.normalize(path.join(FRONTEND_DIR, safePath));
   if (!filePath.startsWith(FRONTEND_DIR)) {
     response.statusCode = 403;
@@ -104,8 +164,32 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.method === 'GET' && (url.pathname === '/display' || url.pathname === '/display/' || url.pathname === '/display/index.html')) {
-    await serveStatic(response, '/display');
+  if (request.method === 'GET' && (url.pathname === '/display' || url.pathname === '/display/' || url.pathname === '/display/index.html' || /^\/display(?:\/[^/]+)?(?:\/[^/]+)?$/.test(url.pathname))) {
+    await serveStatic(response, url.pathname);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/display-config.json') {
+    const configPath = path.join(FRONTEND_DIR, 'display-config.json');
+    try {
+      const baseConfig = JSON.parse(await fs.readFile(configPath, 'utf8'));
+      const designConfigPath = path.resolve(ROOT, 'design-system.config.json');
+      let designConfig = {};
+
+      try {
+        designConfig = JSON.parse(await fs.readFile(designConfigPath, 'utf8'));
+      } catch {
+        designConfig = {};
+      }
+
+      const mergedConfig = mergeDesignThemeConfig(baseConfig, designConfig);
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify(mergedConfig, null, 2));
+    } catch {
+      response.statusCode = 404;
+      response.end('Not Found');
+    }
     return;
   }
 
@@ -202,3 +286,4 @@ const server = http.createServer(async (request, response) => {
 server.listen(PORT, HOST, () => {
   console.log(`display-runtime-ready http://${HOST}:${PORT} modules=${discoveredModules.moduleCount}`);
 });
+

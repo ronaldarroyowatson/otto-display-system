@@ -20,6 +20,7 @@ if (Test-Path $commandRunner) {
   node $commandRunner "file.rotate.logs" "directory=$logDir" "maxFiles=12" "maxBytes=4000000" "activeLogFile=$activeLog" | Out-Null
 }
 
+Remove-Item -Path $target -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 
 $manifestPath = Join-Path $root "update/manifest.json"
@@ -32,12 +33,39 @@ $manifest | ConvertTo-Json -Depth 8 | Set-Content $resolvedManifestPath -Encodin
 $payloadRoot = Join-Path $target "payload"
 New-Item -ItemType Directory -Path $payloadRoot -Force | Out-Null
 
-Copy-Item (Join-Path $root "modules") (Join-Path $payloadRoot "modules") -Recurse -Force
-Copy-Item (Join-Path $root "config") (Join-Path $payloadRoot "config") -Recurse -Force
-Copy-Item (Join-Path $root "schemas") (Join-Path $payloadRoot "schemas") -Recurse -Force
+foreach ($folderName in @("modules", "apps", "config", "schemas")) {
+  $sourceFolder = Join-Path $root $folderName
+  $destinationFolder = Join-Path $payloadRoot $folderName
+  New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
+  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git dist artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+  if ($LASTEXITCODE -gt 7) {
+    throw "Failed to stage $folderName into the update payload."
+  }
+}
+
+foreach ($folderName in @("external/otto/otto-command-service", "external/otto/otto-debug-extension", "external/otto/otto-kernel", "external/otto/otto-file-extension")) {
+  $sourceFolder = Join-Path $root $folderName
+  $destinationFolder = Join-Path $payloadRoot $folderName
+  New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
+  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git dist artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+  if ($LASTEXITCODE -gt 7) {
+    throw "Failed to stage $folderName into the update payload."
+  }
+}
 Copy-Item (Join-Path $root "module-loader.config.json") (Join-Path $payloadRoot "module-loader.config.json") -Force
 
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zipPath = Join-Path $target "otto-display-system-$Version.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-Compress-Archive -Path (Join-Path $payloadRoot "*") -DestinationPath $zipPath
+$zipFile = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+  Get-ChildItem -Path $payloadRoot -Recurse -File -Force | ForEach-Object {
+    $relativePath = $_.FullName.Substring($payloadRoot.Length + 1) -replace '\\', '/'
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zipFile, $_.FullName, $relativePath, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+  }
+}
+finally {
+  $zipFile.Dispose()
+}
 Write-Output "Update package built: $zipPath"

@@ -11,6 +11,13 @@
     "display-frontend"
   ],
   "includes": {
+    "apps": ["apps/display-runtime", "apps/runtime-shared"],
+    "external": [
+      "external/otto/otto-command-service",
+      "external/otto/otto-debug-extension",
+      "external/otto/otto-kernel",
+      "external/otto/otto-file-extension"
+    ],
     "frontendAssets": ["modules/display-frontend/public"],
     "configs": ["config", "module-loader.config.json"],
     "schedules": ["config/schedules"],

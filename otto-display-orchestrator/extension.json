@@ -1,0 +1,26 @@
+{
+  "id": "otto.display.orchestrator",
+  "name": "Otto Display Orchestrator",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "description": "Dynamic layout orchestration engine for Otto Display System experiences.",
+  "author": "Otto Systems",
+  "entrypoints": {
+    "core": "src/integration/csl-registration.ts"
+  },
+  "capabilities": [
+    "display",
+    "layout",
+    "orchestration",
+    "phase",
+    "content-generation",
+    "design-system-integration",
+    "module-data-adaptation"
+  ],
+  "runtime": {
+    "executionModel": "csl",
+    "allowApi": false,
+    "allowCli": false,
+    "contentOutput": "/content/display.json"
+  }
+}

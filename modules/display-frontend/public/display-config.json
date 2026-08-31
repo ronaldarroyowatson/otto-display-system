@@ -1,0 +1,132 @@
+{
+  "defaults": {
+    "displayId": "hallway",
+    "pageId": "announcements"
+  },
+  "dsc": {
+    "transition": "fade",
+    "theme": "midnight"
+  },
+  "themes": {
+    "midnight": {
+      "colors": {
+        "background": "#0b132b",
+        "surface": "rgba(255, 255, 255, 0.10)",
+        "text": "#f4f7fb",
+        "muted": "#dfe8f5",
+        "accent": "#ffd166",
+        "accentSoft": "#90e0ef",
+        "border": "rgba(110, 202, 255, 0.95)"
+      },
+      "fonts": {
+        "body": "Segoe UI, Helvetica Neue, sans-serif",
+        "heading": "Segoe UI, Helvetica Neue, sans-serif"
+      },
+      "motion": {
+        "page": "320ms cubic-bezier(0.22, 1, 0.36, 1)"
+      },
+      "backgrounds": {
+        "page": "linear-gradient(135deg, #0b132b 0%, #1c2541 42%, #3a506b 100%)"
+      }
+    },
+    "daylight": {
+      "colors": {
+        "background": "#eef6ff",
+        "surface": "rgba(255, 255, 255, 0.72)",
+        "text": "#1f2937",
+        "muted": "#475569",
+        "accent": "#0f766e",
+        "accentSoft": "#f59e0b",
+        "border": "rgba(15, 118, 110, 0.35)"
+      },
+      "fonts": {
+        "body": "Segoe UI, Helvetica Neue, sans-serif",
+        "heading": "Segoe UI, Helvetica Neue, sans-serif"
+      },
+      "motion": {
+        "page": "260ms ease"
+      },
+      "backgrounds": {
+        "page": "linear-gradient(135deg, #f0f9ff 0%, #dbeafe 50%, #ecfeff 100%)"
+      }
+    },
+    "signal": {
+      "colors": {
+        "background": "#111827",
+        "surface": "rgba(17, 24, 39, 0.82)",
+        "text": "#f9fafb",
+        "muted": "#d1d5db",
+        "accent": "#22c55e",
+        "accentSoft": "#38bdf8",
+        "border": "rgba(56, 189, 248, 0.28)"
+      },
+      "fonts": {
+        "body": "Segoe UI, Helvetica Neue, sans-serif",
+        "heading": "Arial, Helvetica, sans-serif"
+      },
+      "motion": {
+        "page": "300ms cubic-bezier(0.2, 0.8, 0.2, 1)"
+      },
+      "backgrounds": {
+        "page": "linear-gradient(135deg, #111827 0%, #1f2937 35%, #0f172a 100%)"
+      }
+    }
+  },
+  "moduleCatalog": {
+    "announcements": {
+      "label": "Announcements",
+      "content": "Good morning! Please check the updated daily schedule and review any hallway reminders before first period."
+    },
+    "homework": {
+      "label": "Homework",
+      "content": "Biology: finish the lab reflection. English: read Chapter 8 and submit evidence notes."
+    },
+    "weather": {
+      "label": "Weather",
+      "content": "72°F • Partly cloudy • Light wind from the west."
+    },
+    "calendar": {
+      "label": "Calendar",
+      "content": "Today: attendance, advisory, and the 3:15 PM club meeting."
+    }
+  },
+  "displays": {
+    "hallway": {
+      "displayId": "hallway",
+      "name": "Hallway Display",
+      "theme": "midnight",
+      "cycleInterval": 10000,
+      "transition": "fade",
+      "pages": [
+        { "id": "announcements", "label": "Announcements", "modules": ["announcements"] },
+        { "id": "homework", "label": "Homework", "modules": ["homework"] },
+        { "id": "weather", "label": "Weather", "modules": ["weather"] },
+        { "id": "calendar", "label": "Calendar", "modules": ["calendar"] }
+      ]
+    },
+    "sidewall": {
+      "displayId": "sidewall",
+      "name": "Sidewall Display",
+      "theme": "daylight",
+      "cycleInterval": 10000,
+      "transition": "slide",
+      "pages": [
+        { "id": "homework", "label": "Homework", "modules": ["homework"] },
+        { "id": "calendar", "label": "Calendar", "modules": ["calendar"] },
+        { "id": "announcements", "label": "Announcements", "modules": ["announcements"] }
+      ]
+    },
+    "backwall": {
+      "displayId": "backwall",
+      "name": "Backwall Display",
+      "theme": "signal",
+      "cycleInterval": 10000,
+      "transition": "dissolve",
+      "pages": [
+        { "id": "announcements", "label": "Announcements", "modules": ["announcements"] },
+        { "id": "calendar", "label": "Calendar", "modules": ["calendar"] },
+        { "id": "weather", "label": "Weather", "modules": ["weather"] }
+      ]
+    }
+  }
+}

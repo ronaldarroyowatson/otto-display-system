@@ -5,8 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=otto-display-system
-Group=otto-display-system
 WorkingDirectory=/opt/otto-display-system/current
 Environment=OTTO_DISPLAY_HOST=0.0.0.0
 Environment=OTTO_DISPLAY_PORT=8080
