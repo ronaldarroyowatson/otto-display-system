@@ -43,7 +43,15 @@ foreach ($folderName in @("modules", "apps", "config", "schemas")) {
   }
 }
 
-foreach ($folderName in @("external/otto/otto-command-service", "external/otto/otto-debug-extension", "external/otto/otto-kernel", "external/otto/otto-file-extension")) {
+foreach ($folderName in @(
+  "external/otto/otto-command-service",
+  "external/otto/otto-debug-extension",
+  "external/otto/otto-kernel",
+  "external/otto/otto-file-extension",
+  "external/otto/otto-design-system-dev-ui",
+  "external/otto/otto-display-orchestrator",
+  "external/otto/otto-extensions"
+)) {
   $sourceFolder = Join-Path $root $folderName
   $destinationFolder = Join-Path $payloadRoot $folderName
   New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
@@ -53,6 +61,9 @@ foreach ($folderName in @("external/otto/otto-command-service", "external/otto/o
   }
 }
 Copy-Item (Join-Path $root "module-loader.config.json") (Join-Path $payloadRoot "module-loader.config.json") -Force
+if (Test-Path (Join-Path $root "design-system.config.json")) {
+  Copy-Item (Join-Path $root "design-system.config.json") (Join-Path $payloadRoot "design-system.config.json") -Force
+}
 
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem

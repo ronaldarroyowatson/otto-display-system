@@ -55,6 +55,7 @@ const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
+const DISPLAY_CONTENT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-orchestrator', 'content', 'display.json');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
@@ -164,6 +165,20 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  const displayMatch = /^\/display\/([^/]+)\/current$/.exec(url.pathname);
+  if (request.method === 'GET' && displayMatch) {
+    try {
+      const role = displayMatch[1];
+      const payload = await executeRoutedCommand('display.current', { role });
+      await traceApi(request.method, url.pathname, 200);
+      sendJson(response, 200, payload);
+    } catch (error) {
+      await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'Invalid role');
+      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid role' });
+    }
+    return;
+  }
+
   if (request.method === 'GET' && (url.pathname === '/display' || url.pathname === '/display/' || url.pathname === '/display/index.html' || /^\/display(?:\/[^/]+)?(?:\/[^/]+)?$/.test(url.pathname))) {
     await serveStatic(response, url.pathname);
     return;
@@ -221,16 +236,15 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  const displayMatch = /^\/display\/([^/]+)\/current$/.exec(url.pathname);
-  if (request.method === 'GET' && displayMatch) {
+  if (request.method === 'GET' && url.pathname === '/content/display.json') {
     try {
-      const role = displayMatch[1];
-      const payload = await executeRoutedCommand('display.current', { role });
-      await traceApi(request.method, url.pathname, 200);
-      sendJson(response, 200, payload);
-    } catch (error) {
-      await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'Invalid role');
-      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid role' });
+      const displayContent = await fs.readFile(DISPLAY_CONTENT_PATH, 'utf8');
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.end(displayContent);
+    } catch {
+      response.statusCode = 404;
+      response.end('Not Found');
     }
     return;
   }
