@@ -113,7 +113,18 @@ async function run() {
   throw new Error(`Unknown command: ${args.join(' ')}`);
 }
 
-run().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
+run().catch(async (error) => {
+  const details = error instanceof Error ? error.message : String(error);
+  try {
+    await executeRoutedCommand('debug.trace.command', {
+      command: 'otto.cli.runtime',
+      status: 'error',
+      details
+    });
+  } catch {
+    // Preserve CLI failure behavior when debug tracing is unavailable.
+  }
+
+  console.error(details);
   process.exitCode = 1;
 });

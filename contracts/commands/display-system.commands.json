@@ -36,6 +36,11 @@
       "module": "otto-debug-extension"
     },
     {
+      "id": "orchestrator.rotation.plan.get",
+      "description": "Build current rotation plan using persisted orchestrator settings through command service.",
+      "module": "otto-command-service"
+    },
+    {
       "id": "file.check.space",
       "description": "Preflight free-space checks for install and update operations.",
       "module": "otto-file-extension"

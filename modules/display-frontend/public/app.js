@@ -1,6 +1,6 @@
 ﻿const defaultDisplayId = "hallway";
 const defaultPageId = "announcements";
-const state = { displayId: defaultDisplayId, pageIndex: 0, timer: null };
+const state = { displayId: defaultDisplayId, pageIndex: 0, timer: null, rotationPlan: null };
 
 function getRoute() {
   const pathname = window.location.pathname.replace(/\/+$/, "") || "/display";
@@ -65,6 +65,53 @@ function renderSingleModulePage(display, page, moduleId, transition = "fade", mo
   }
 }
 
+function renderDynamicRolePage(rolePayload) {
+  const app = document.getElementById("app");
+  const role = rolePayload.role ?? "unknown";
+  const object = rolePayload.content?.object ?? {};
+  const objectType = object.type ?? "UnknownObject";
+
+  console.log('[App] renderDynamicRolePage called for role:', role, 'objectType:', objectType);
+  console.log('[App] window.renderObject available:', !!window.renderObject);
+  console.log('[App] window.renderTimeObject available:', !!window.renderTimeObject);
+  console.log('[App] window.renderWeatherObject available:', !!window.renderWeatherObject);
+  console.log('[App] object payload:', object);
+
+  app.innerHTML = `
+    <div class="display-shell transition-fade">
+      <header class="display-header">
+        <h1>${role.toUpperCase()} Display</h1>
+        <div class="meta">Stable URL: /display/${role}/current</div>
+      </header>
+      <main class="page-panel" aria-live="polite">
+        <div class="page-badge">${objectType}</div>
+        <article class="single-module-card" id="content-container">
+          <!-- Object content will be rendered here -->
+        </article>
+      </main>
+    </div>
+  `;
+
+  // Render the object using the registered renderer
+  const contentContainer = document.getElementById("content-container");
+  if (window.renderObject && contentContainer) {
+    console.log('[App] Calling window.renderObject for', objectType);
+    window.renderObject(object, contentContainer);
+  } else if (contentContainer) {
+    // Fallback if renderObject is not available
+    console.warn('[App] renderObject not available, using fallback');
+    const mainValue = object.currentTime ?? `${object.temperature ?? "--"} ${object.conditions ?? ""}`.trim();
+    const secondary = object.icon ? `icon: ${object.icon}` : `phase: ${rolePayload.currentPhase ?? "unknown"}`;
+    contentContainer.innerHTML = `
+      <h2>${objectType}</h2>
+      <p>${mainValue}</p>
+      <p>${secondary}</p>
+    `;
+  }
+
+  document.title = `Otto Display | ${role}`;
+}
+
 function cycleDisplay(display, cycleInterval) {
   if (state.timer) {
     clearInterval(state.timer);
@@ -79,13 +126,40 @@ function cycleDisplay(display, cycleInterval) {
 
 async function render() {
   try {
+    const route = getRoute();
+
+    if (route.displayId === "hallway" && !route.pageId) {
+      try {
+        const rotationResponse = await fetch("/content/rotation.json", { cache: "no-store" });
+        if (rotationResponse.ok) {
+          state.rotationPlan = await rotationResponse.json();
+        }
+      } catch {
+        state.rotationPlan = null;
+      }
+
+      if (state.rotationPlan?.pages?.length) {
+        const rolePage = state.rotationPlan.pages[state.pageIndex % state.rotationPlan.pages.length];
+        const rolePayloadResponse = await fetch(`/display/${rolePage.id}/current`, { cache: "no-store" });
+        if (rolePayloadResponse.ok) {
+          const rolePayload = await rolePayloadResponse.json();
+          renderDynamicRolePage(rolePayload);
+
+          cycleDisplay(
+            { pages: state.rotationPlan.pages },
+            state.rotationPlan.rotationIntervalMs || 30000
+          );
+          return;
+        }
+      }
+    }
+
     const response = await fetch("/display-config.json", { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Unable to load display config (${response.status})`);
     }
 
     const config = await response.json();
-    const route = getRoute();
     const requestedDisplayId = config.displays?.[route.displayId] ? route.displayId : config.defaults?.displayId || defaultDisplayId;
     const display = config.displays?.[requestedDisplayId] ?? config.displays?.[config.defaults?.displayId || defaultDisplayId];
 

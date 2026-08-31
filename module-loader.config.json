@@ -8,6 +8,7 @@
   ],
   "contracts": {
     "commands": "contracts/commands",
-    "api": "contracts/api"
+    "api": "contracts/api",
+    "settings": "contracts/settings"
   }
 }
