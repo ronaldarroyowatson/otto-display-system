@@ -37,7 +37,7 @@ foreach ($folderName in @("modules", "apps", "config", "schemas")) {
   $sourceFolder = Join-Path $root $folderName
   $destinationFolder = Join-Path $payloadRoot $folderName
   New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
-  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git dist artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
   if ($LASTEXITCODE -gt 7) {
     throw "Failed to stage $folderName into the update payload."
   }
@@ -55,7 +55,7 @@ foreach ($folderName in @(
   $sourceFolder = Join-Path $root $folderName
   $destinationFolder = Join-Path $payloadRoot $folderName
   New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
-  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git dist artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+  & robocopy $sourceFolder $destinationFolder /E /XD node_modules .git artifacts /XF *.zip *.tgz *.tar *.gz /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
   if ($LASTEXITCODE -gt 7) {
     throw "Failed to stage $folderName into the update payload."
   }
