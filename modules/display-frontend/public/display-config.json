@@ -75,7 +75,7 @@
   "moduleCatalog": {
     "announcements": {
       "label": "Announcements",
-      "content": "Good morning! Please check the updated daily schedule and review any hallway reminders before first period."
+      "content": "Good morning! Please check the updated daily schedule and review any hallway reminders before first period. [autoupdate-test-2026-08-31]"
     },
     "homework": {
       "label": "Homework",
