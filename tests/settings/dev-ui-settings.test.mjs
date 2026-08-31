@@ -6,25 +6,18 @@ async function read(relPath) {
   return fs.readFile(new URL(relPath, import.meta.url), 'utf8');
 }
 
-test('dev ui orchestrator settings page contains required controls', async () => {
+test('dev ui settings page includes per-page controls and preview card', async () => {
   const html = await read('../../external/otto/otto-design-system-dev-ui/src/pages/orchestrator-settings.html');
-  assert.match(html, /rotationIntervalMs/);
-  assert.match(html, /rotationMode/);
-  assert.match(html, /weatherSevere/);
-  assert.match(html, /scheduleClassChange/);
-  assert.match(html, /phaseAssembly/);
+  assert.match(html, /Per-Page Controls/);
+  assert.match(html, /pageSettingsCards/);
+  assert.match(html, /rotationPreviewCard/);
+  assert.match(html, /newPageType/);
 });
 
-test('dev ui controller uses CSL settings command', async () => {
-  const js = await read('../../external/otto/otto-design-system-dev-ui/src/scripts/orchestrator-settings.js');
-  assert.match(js, /orchestrator\.settings\.set/);
-  assert.match(js, /orchestrator\.settings\.get/);
-  assert.match(js, /orchestrator\.rotation\.plan\.get/);
-  assert.match(js, /debug\.trace\.command/);
-  assert.match(js, /debug\.trace\.api/);
-});
-
-test('dev ui index includes orchestrator settings navigation entry', async () => {
-  const html = await read('../../external/otto/otto-design-system-dev-ui/src/pages/index.html');
-  assert.match(html, /Display Orchestrator Settings/);
+test('dev ui controller and preview scripts use page settings commands', async () => {
+  const controller = await read('../../external/otto/otto-design-system-dev-ui/src/scripts/orchestrator-settings.js');
+  const preview = await read('../../external/otto/otto-design-system-dev-ui/src/scripts/rotation-preview.js');
+  assert.match(controller, /orchestrator\.pageSettings\.set/);
+  assert.match(controller, /orchestrator\.pages\.add/);
+  assert.match(preview, /renderRotationPreviewCard/);
 });

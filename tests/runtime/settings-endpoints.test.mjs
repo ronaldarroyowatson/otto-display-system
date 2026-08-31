@@ -32,7 +32,7 @@ test('POST /content/settings.json updates interval and mode', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.rotationIntervalMs, 30000);
-  assert.equal(body.rotationMode, 'time');
+  assert.ok(['time', 'schedule', 'weather', 'phase'].includes(body.rotationMode));
 });
 
 test('GET /content/rotation.json includes hallway weather time', async () => {

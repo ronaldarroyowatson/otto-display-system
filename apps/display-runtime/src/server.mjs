@@ -65,7 +65,12 @@ async function readOrchestratorSettings() {
 function applyOrchestratorSettingsToDisplayConfig(config, settings) {
   const nextConfig = JSON.parse(JSON.stringify(config));
   const displays = nextConfig.displays ?? {};
-  const enabledPages = new Set(settings.enabledPages ?? []);
+  const pageSettings = settings.pages && typeof settings.pages === 'object' ? settings.pages : {};
+  const enabledPages = new Set(
+    Object.values(pageSettings)
+      .filter((page) => page && page.enabled !== false)
+      .map((page) => page.id)
+  );
 
   for (const displayName of Object.keys(displays)) {
     const display = displays[displayName];
@@ -82,7 +87,13 @@ function applyOrchestratorSettingsToDisplayConfig(config, settings) {
     });
 
     display.pages = filteredPages.length > 0 ? filteredPages : display.pages;
-    display.cycleInterval = settings.rotationIntervalMs ?? display.cycleInterval;
+
+    if (display.pages[0]) {
+      const firstPageSettings = pageSettings[display.pages[0].id];
+      if (firstPageSettings?.displayDurationMs) {
+        display.cycleInterval = firstPageSettings.displayDurationMs;
+      }
+    }
   }
 
   nextConfig.orchestratorSettings = settings;
@@ -199,6 +210,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+  const displayPageMatch = /^\/display\/([^/]+)\/([^/]+)\/current$/.exec(url.pathname);
+  if (request.method === 'GET' && displayPageMatch) {
+    try {
+      const displayId = displayPageMatch[1];
+      const role = displayPageMatch[2];
+      const payload = await executeRoutedCommand('display.current', { role, displayId });
+      await traceApi(request.method, url.pathname, 200);
+      sendJson(response, 200, payload);
+    } catch (error) {
+      await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'Invalid role');
+      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid role' });
+    }
+    return;
+  }
+
   const displayMatch = /^\/display\/([^/]+)\/current$/.exec(url.pathname);
   if (request.method === 'GET' && displayMatch) {
     try {
@@ -291,13 +317,58 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && url.pathname === '/content/settings.json') {
-    const settings = await readOrchestratorSettings();
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const settings = displayId
+      ? await executeRoutedCommand('orchestrator.settings.get', { displayId })
+      : await readOrchestratorSettings();
     sendJson(response, 200, settings);
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/content/tier-list.json') {
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const payload = await executeRoutedCommand('orchestrator.tierList.get', { displayId });
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/content/tier-list.json') {
+    const body = await readJsonBody(request);
+    const payload = await executeRoutedCommand('orchestrator.tierList.set', body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/content/displays.json') {
+    const payload = await executeRoutedCommand('orchestrator.displays.list', {});
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/content/displays/add') {
+    const body = await readJsonBody(request);
+    const payload = await executeRoutedCommand('orchestrator.displays.add', body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/content/displays/delete') {
+    const body = await readJsonBody(request);
+    const payload = await executeRoutedCommand('orchestrator.displays.delete', body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/content/displays/share-playlist') {
+    const body = await readJsonBody(request);
+    const payload = await executeRoutedCommand('orchestrator.displays.sharePlaylist', body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/content/settings/download') {
-    const payload = await executeRoutedCommand('orchestrator.settings.download');
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const payload = await executeRoutedCommand('orchestrator.settings.download', { displayId });
     await traceApi(request.method, url.pathname, 200);
     sendJson(response, 200, payload);
     return;
@@ -321,14 +392,16 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && url.pathname === '/content/rotation.json') {
-    const rotationPlan = await executeRoutedCommand('orchestrator.rotation.plan.get');
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const rotationPlan = await executeRoutedCommand('orchestrator.rotation.plan.get', { displayId });
     await traceApi(request.method, url.pathname, 200);
     sendJson(response, 200, rotationPlan);
     return;
   }
 
   if (request.method === 'GET' && url.pathname === '/content/pages/pages.json') {
-    const payload = await executeRoutedCommand('orchestrator.pages.list');
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const payload = await executeRoutedCommand('orchestrator.pages.list', { displayId });
     await traceApi(request.method, url.pathname, 200);
     sendJson(response, 200, payload);
     return;
@@ -337,13 +410,28 @@ const server = http.createServer(async (request, response) => {
   if (request.method === 'POST' && url.pathname === '/content/pages/add') {
     const body = await readJsonBody(request);
     const payload = await executeRoutedCommand('orchestrator.pages.add', body);
+      if (request.method === 'POST' && url.pathname === '/content/pages/delete') {
+        const body = await readJsonBody(request);
+        const payload = await executeRoutedCommand('orchestrator.page.softDelete', body);
+        sendJson(response, 200, payload);
+        return;
+      }
+
+      if (request.method === 'POST' && url.pathname === '/content/pages/restore') {
+        const body = await readJsonBody(request);
+        const payload = await executeRoutedCommand('orchestrator.page.restore', body);
+        sendJson(response, 200, payload);
+        return;
+      }
+
     await traceApi(request.method, url.pathname, 200);
     sendJson(response, 200, payload);
     return;
   }
 
   if (request.method === 'GET' && url.pathname === '/content/pages/download-all') {
-    const payload = await executeRoutedCommand('orchestrator.pages.download-all');
+    const displayId = url.searchParams.get('displayId') || undefined;
+    const payload = await executeRoutedCommand('orchestrator.pages.download-all', { displayId });
     const archive = Buffer.from(String(payload.archiveBase64 ?? ''), 'base64');
     response.statusCode = 200;
     response.setHeader('Content-Type', payload.contentType ?? 'application/zip');
@@ -360,6 +448,30 @@ const server = http.createServer(async (request, response) => {
     response.setHeader('Content-Type', contentType(relativePath));
     response.end(result.content);
     return;
+  }
+
+  const displayRegistryFileMatch = /^\/content\/displays\/([^/]+)\/(settings\.json|pages\.json|tierList\.json)$/.exec(url.pathname);
+  if (request.method === 'GET' && displayRegistryFileMatch) {
+    const displayId = decodeURIComponent(displayRegistryFileMatch[1]);
+    const fileName = displayRegistryFileMatch[2];
+
+    if (fileName === 'settings.json') {
+      const payload = await executeRoutedCommand('orchestrator.settings.get', { displayId });
+      sendJson(response, 200, payload);
+      return;
+    }
+
+    if (fileName === 'pages.json') {
+      const payload = await executeRoutedCommand('orchestrator.pages.list', { displayId });
+      sendJson(response, 200, payload);
+      return;
+    }
+
+    if (fileName === 'tierList.json') {
+      const payload = await executeRoutedCommand('orchestrator.tierList.get', { displayId });
+      sendJson(response, 200, payload);
+      return;
+    }
   }
 
   if (request.method === 'POST' && url.pathname === '/csl/command') {

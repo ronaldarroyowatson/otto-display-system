@@ -8,12 +8,11 @@ async function read(relPath) {
 
 test('orchestrator settings contract contains required fields', async () => {
   const src = await read('../../external/otto/otto-display-orchestrator/src/features/settings/models/OrchestratorSettings.ts');
-  assert.match(src, /enabledPages:\s*string\[\]/);
-  assert.match(src, /rotationIntervalMs:\s*number/);
-  assert.match(src, /rotationMode:\s*RotationMode/);
-  assert.match(src, /weatherTriggers/);
-  assert.match(src, /scheduleTriggers/);
-  assert.match(src, /phaseTriggers/);
+  assert.match(src, /pages:\s*Record<string,\s*PageSettings>/);
+  assert.match(src, /displayDurationMs:\s*number/);
+  assert.match(src, /timeZone:\s*string/);
+  assert.match(src, /format:\s*TimeDisplayFormat/);
+  assert.match(src, /style:\s*TimeDisplayStyle/);
 });
 
 test('settings command registration contains get/set/list', async () => {
@@ -21,6 +20,9 @@ test('settings command registration contains get/set/list', async () => {
   assert.match(src, /orchestrator\.settings\.get/);
   assert.match(src, /orchestrator\.settings\.set/);
   assert.match(src, /orchestrator\.settings\.list/);
+  assert.match(src, /orchestrator\.pageSettings\.get/);
+  assert.match(src, /orchestrator\.pageSettings\.set/);
+  assert.match(src, /orchestrator\.pageSettings\.list/);
 });
 
 test('settings compiler document exists', async () => {

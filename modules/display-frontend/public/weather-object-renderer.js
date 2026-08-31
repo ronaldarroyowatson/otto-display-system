@@ -4,6 +4,10 @@
  */
 
 function renderWeatherObject(object, container) {
+  const units = object.units === 'C' ? 'C' : 'F';
+  const severe = object.severeWeatherOverride === true;
+  const iconPack = object.iconPack || 'default';
+  const resolvedIcon = object.icon || (iconPack === 'minimal' ? 'cloud' : '☁️');
   const weatherContainer = document.createElement('div');
   weatherContainer.className = 'weather-object-display';
   weatherContainer.style.cssText = `
@@ -23,7 +27,7 @@ function renderWeatherObject(object, container) {
     color: var(--text, #f4f7fb);
     margin-bottom: 12px;
   `;
-  tempDisplay.textContent = `${object.temperature ?? '--'}°`;
+  tempDisplay.textContent = `${object.temperature ?? '--'}°${units}`;
 
   const conditionsDisplay = document.createElement('div');
   conditionsDisplay.className = 'weather-conditions';
@@ -32,7 +36,7 @@ function renderWeatherObject(object, container) {
     color: var(--muted, #dfe8f5);
     margin-bottom: 16px;
   `;
-  conditionsDisplay.textContent = object.conditions ?? 'Unknown';
+  conditionsDisplay.textContent = severe ? 'Severe Weather Override' : (object.conditions ?? 'Unknown');
 
   const iconDisplay = document.createElement('div');
   iconDisplay.className = 'weather-icon';
@@ -40,7 +44,7 @@ function renderWeatherObject(object, container) {
     font-size: clamp(2rem, 6vw, 4rem);
     margin-top: 16px;
   `;
-  iconDisplay.textContent = object.icon ?? '☁️';
+  iconDisplay.textContent = resolvedIcon;
 
   weatherContainer.appendChild(tempDisplay);
   weatherContainer.appendChild(conditionsDisplay);

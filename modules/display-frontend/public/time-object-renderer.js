@@ -1,63 +1,59 @@
-/**
- * TimeObject Renderer
- * Displays current time with automatic updates
- */
+function resolveTimeZone(timeSettings) {
+  return timeSettings?.timeZone || 'UTC';
+}
 
-function formatTimeNow() {
+function toAdjustedDate(timeSettings) {
   const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `${hours}:${minutes}:${seconds}`;
+  if (timeSettings?.useDaylightSavings === false) {
+    return new Date(now.getTime() - 60 * 60 * 1000);
+  }
+  return now;
+}
+
+function formatDigital(date, timeSettings) {
+  const use12h = timeSettings?.format === '12h';
+  const showSeconds = timeSettings?.showSeconds !== false;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: showSeconds ? '2-digit' : undefined,
+    hour12: use12h,
+    timeZone: resolveTimeZone(timeSettings)
+  });
+  let rendered = formatter.format(date);
+  if (timeSettings?.leadingZero === false) {
+    rendered = rendered.replace(/^0(\d:)/, '$1');
+  }
+  return rendered;
 }
 
 function renderTimeObject(object, container) {
-  const timeContainer = document.createElement('div');
-  timeContainer.className = 'time-object-display';
-  timeContainer.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-    font-family: "ui-monospace", "SFMono-Regular", "Courier New", monospace;
-    text-align: center;
-  `;
-
-  const timeDisplay = document.createElement('div');
-  timeDisplay.className = 'time-display-value';
-  timeDisplay.style.cssText = `
-    font-size: clamp(3rem, 10vw, 7rem);
-    font-weight: 300;
-    letter-spacing: 0.08em;
-    color: var(--text, #f4f7fb);
-    line-height: 1;
-    margin-bottom: 12px;
-  `;
-  
-  // Display current time - use object.currentTime from backend if available, otherwise generate fresh
-  timeDisplay.textContent = object.currentTime || formatTimeNow();
-
-  // Update time every second
-  const updateIntervalMs = (object.updatesEverySeconds || 1) * 1000;
-  const updateTimer = setInterval(() => {
-    timeDisplay.textContent = formatTimeNow();
-  }, updateIntervalMs);
-
-  // Store timer ID so it can be cleared when component unmounts
-  timeContainer._updateTimer = updateTimer;
-
-  timeContainer.appendChild(timeDisplay);
+  const timeSettings = object.timeSettings || {};
+  const style = timeSettings.style === 'analog' ? 'analog' : 'digital';
 
   if (container) {
     container.innerHTML = '';
-    container.appendChild(timeContainer);
   }
 
-  return timeContainer;
+  const renderer = style === 'analog' ? window.renderTimeAnalogObject : window.renderTimeDigitalObject;
+  if (typeof renderer !== 'function') {
+    const fallback = document.createElement('div');
+    fallback.textContent = formatDigital(toAdjustedDate(timeSettings), timeSettings);
+    if (container) {
+      container.appendChild(fallback);
+    }
+    return fallback;
+  }
+
+  const view = renderer({
+    ...object,
+    _computedNow: () => toAdjustedDate(timeSettings),
+    _formatDigital: (date) => formatDigital(date, timeSettings)
+  }, container);
+
+  return view;
 }
 
-// Export for use in modules
 if (typeof window !== 'undefined') {
   window.renderTimeObject = renderTimeObject;
 }

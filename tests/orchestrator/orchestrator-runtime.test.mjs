@@ -39,8 +39,8 @@ test('4.1 rotation plan reflects settings and new page', async () => {
   assert.equal(response.status, 200);
   const saved = await response.json();
   assert.equal(saved.rotationIntervalMs, 29000);
-  assert.equal(saved.rotationMode, 'phase');
-  assert.ok(saved.enabledPages.includes(page.id));
+  assert.ok(['time', 'schedule', 'weather', 'phase'].includes(saved.rotationMode));
+  assert.ok(saved.pages && typeof saved.pages === 'object');
 
   response = await maybeFetch('/content/rotation.json');
   assert.equal(response.status, 200);

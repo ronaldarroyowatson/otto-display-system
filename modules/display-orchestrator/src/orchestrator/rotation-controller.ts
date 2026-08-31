@@ -3,6 +3,8 @@ import { generateRotationPlan } from "./generateRotationPlan.js";
 import { OrchestratorSettingsService } from "../settings/OrchestratorSettingsService.js";
 
 export class RotationController {
+  private startedAtMs = Date.now();
+
   constructor(private readonly settingsService = new OrchestratorSettingsService()) {}
 
   async getSettings() {
@@ -19,6 +21,15 @@ export class RotationController {
 
   async buildPlan(config: DisplayConfigDocument): Promise<RotationPlan> {
     const settings = await this.settingsService.get();
-    return generateRotationPlan(config, settings);
+    const plan = generateRotationPlan(config, settings);
+    return {
+      ...plan,
+      triggerReason: plan.triggerReason,
+      countdownMs: plan.countdownMs
+    };
+  }
+
+  getRuntimeAgeMs(): number {
+    return Date.now() - this.startedAtMs;
   }
 }

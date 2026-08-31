@@ -17,6 +17,12 @@ function initializeRenderers() {
       objectRenderers['TimeObject'] = window.renderTimeObject;
       console.log('[Renderers] Registered TimeObject renderer');
     }
+    if (window.renderTimeDigitalObject) {
+      console.log('[Renderers] Registered Time digital renderer');
+    }
+    if (window.renderTimeAnalogObject) {
+      console.log('[Renderers] Registered Time analog renderer');
+    }
     if (window.renderWeatherObject) {
       objectRenderers['WeatherObject'] = window.renderWeatherObject;
       console.log('[Renderers] Registered WeatherObject renderer');

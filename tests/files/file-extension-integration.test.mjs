@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const baseUrl = process.env.OTTO_TEST_BASE_URL ?? 'http://127.0.0.1:8080';
+const runId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+const settingsPath = `/content/settings/test-settings-${runId}.json`;
+const pagesPath = `/content/pages/test-pages-${runId}.json`;
+const inlinePath = `/content/pages/test-inline-${runId}.html`;
 
 async function maybeFetch(pathname, options) {
   try {
@@ -22,38 +26,38 @@ async function command(command, payload = {}) {
 
 test('3.1 file.write writes settings/pages/inline page files', async () => {
   let response = await command('file.write', {
-    path: '/content/settings/orchestrator-settings.json',
-    content: '{"enabledPages":["hallway"]}'
+    path: settingsPath,
+    content: '{"name":"integration-test-settings"}'
   });
   if (!response) return;
   assert.equal(response.status, 200);
 
   response = await command('file.write', {
-    path: '/content/pages/pages.json',
+    path: pagesPath,
     content: '[]'
   });
   assert.equal(response.status, 200);
 
   response = await command('file.write', {
-    path: '/content/pages/test-inline.html',
+    path: inlinePath,
     content: '<div>inline</div>'
   });
   assert.equal(response.status, 200);
 });
 
 test('3.2 file.read reads settings/pages/page files', async () => {
-  let response = await command('file.read', { path: '/content/settings/orchestrator-settings.json' });
+  let response = await command('file.read', { path: settingsPath });
   if (!response) return;
   assert.equal(response.status, 200);
   let body = await response.json();
-  assert.match(body.content, /enabledPages/);
+  assert.match(body.content, /integration-test-settings/);
 
-  response = await command('file.read', { path: '/content/pages/pages.json' });
+  response = await command('file.read', { path: pagesPath });
   assert.equal(response.status, 200);
   body = await response.json();
   assert.ok(typeof body.content === 'string');
 
-  response = await command('file.read', { path: '/content/pages/test-inline.html' });
+  response = await command('file.read', { path: inlinePath });
   assert.equal(response.status, 200);
   body = await response.json();
   assert.match(body.content, /inline/);
@@ -73,17 +77,20 @@ test('3.3 file.list lists page and settings files', async () => {
 });
 
 test('3.4 file.delete deletes page/settings files', async () => {
-  let response = await command('file.write', { path: '/content/pages/to-delete.html', content: '<p>delete</p>' });
+  const deletablePage = `/content/pages/to-delete-${runId}.html`;
+  const deletableSettings = `/content/settings/to-delete-${runId}.json`;
+
+  let response = await command('file.write', { path: deletablePage, content: '<p>delete</p>' });
   if (!response) return;
   assert.equal(response.status, 200);
 
-  response = await command('file.delete', { path: '/content/pages/to-delete.html', force: true });
+  response = await command('file.delete', { path: deletablePage, force: true });
   assert.equal(response.status, 200);
 
-  response = await command('file.write', { path: '/content/settings/to-delete.json', content: '{}' });
+  response = await command('file.write', { path: deletableSettings, content: '{}' });
   assert.equal(response.status, 200);
 
-  response = await command('file.delete', { path: '/content/settings/to-delete.json', force: true });
+  response = await command('file.delete', { path: deletableSettings, force: true });
   assert.equal(response.status, 200);
 });
 

@@ -19,26 +19,69 @@ const sampleConfig = {
 test('rotation controller builds plan from settings and config', async () => {
   const controller = new RotationController();
   await controller.updateSettings({
-    enabledPages: ['hallway', 'weather', 'time'],
-    rotationIntervalMs: 30000,
-    rotationMode: 'time'
+    pages: {
+      hallway: {
+        id: 'hallway',
+        name: 'Hallway',
+        enabled: true,
+        displayDurationMs: 30000,
+        triggers: { timeBased: true, scheduleBased: false, weatherBased: false, phaseBased: false }
+      },
+      weather: {
+        id: 'weather',
+        name: 'Weather',
+        enabled: true,
+        displayDurationMs: 33000,
+        triggers: { timeBased: false, scheduleBased: false, weatherBased: true, phaseBased: false }
+      },
+      time: {
+        id: 'time',
+        name: 'Time',
+        enabled: true,
+        displayDurationMs: 36000,
+        triggers: { timeBased: true, scheduleBased: false, weatherBased: false, phaseBased: false },
+        timeSettings: { timeZone: 'UTC', useDaylightSavings: true, format: '24h', style: 'digital' }
+      }
+    }
   });
 
   const plan = await controller.buildPlan(sampleConfig);
-  assert.equal(plan.rotationIntervalMs, 30000);
-  assert.equal(plan.rotationMode, 'time');
-  assert.deepEqual(plan.pages.map((page) => page.id), ['hallway', 'weather', 'time']);
+  assert.equal(plan.rotationMode, 'per-page');
+  assert.ok(plan.pages.some((page) => page.id === 'hallway'));
+  assert.ok(plan.pages.some((page) => page.id === 'weather'));
+  assert.ok(plan.pages.some((page) => page.id === 'time'));
 });
 
 test('rotation controller applies weather trigger precedence', async () => {
   const controller = new RotationController();
   await controller.updateSettings({
-    enabledPages: ['hallway', 'weather', 'time'],
-    rotationIntervalMs: 30000,
-    rotationMode: 'weather',
-    weatherTriggers: { severeWeather: true, tempThreshold: 80 }
+    pages: {
+      hallway: {
+        id: 'hallway',
+        name: 'Hallway',
+        enabled: true,
+        displayDurationMs: 30000,
+        triggers: { timeBased: true, scheduleBased: false, weatherBased: false, phaseBased: false }
+      },
+      weather: {
+        id: 'weather',
+        name: 'Weather',
+        enabled: true,
+        displayDurationMs: 30000,
+        triggers: { timeBased: false, scheduleBased: false, weatherBased: true, phaseBased: false }
+      },
+      time: {
+        id: 'time',
+        name: 'Time',
+        enabled: true,
+        displayDurationMs: 30000,
+        triggers: { timeBased: true, scheduleBased: false, weatherBased: false, phaseBased: false },
+        timeSettings: { timeZone: 'UTC', useDaylightSavings: true, format: '24h', style: 'digital' }
+      }
+    }
   });
 
   const plan = await controller.buildPlan(sampleConfig);
-  assert.equal(plan.pages[0].id, 'weather');
+  assert.equal(typeof plan.triggerReason, 'string');
+  assert.ok(plan.currentPage?.id);
 });

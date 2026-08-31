@@ -112,25 +112,33 @@ function renderDynamicRolePage(rolePayload) {
   document.title = `Otto Display | ${role}`;
 }
 
-function cycleDisplay(display, cycleInterval) {
+function clearRotationTimer() {
   if (state.timer) {
-    clearInterval(state.timer);
+    clearTimeout(state.timer);
+    state.timer = null;
   }
+}
 
-  state.timer = setInterval(() => {
-    const nextIndex = (state.pageIndex + 1) % display.pages.length;
-    state.pageIndex = nextIndex;
-    render();
-  }, cycleInterval);
+function scheduleNextRender(delayMs) {
+  clearRotationTimer();
+  state.timer = setTimeout(() => {
+    render().catch(() => {});
+  }, Math.max(1000, Number(delayMs || 0)));
+}
+
+function cycleDisplay(display, cycleInterval) {
+  const delay = Number(cycleInterval || 10000);
+  state.pageIndex = (state.pageIndex + 1) % display.pages.length;
+  scheduleNextRender(delay);
 }
 
 async function render() {
   try {
     const route = getRoute();
 
-    if (route.displayId === "hallway" && !route.pageId) {
+    if (!route.pageId) {
       try {
-        const rotationResponse = await fetch("/content/rotation.json", { cache: "no-store" });
+        const rotationResponse = await fetch(`/content/rotation.json?displayId=${encodeURIComponent(route.displayId)}`, { cache: "no-store" });
         if (rotationResponse.ok) {
           state.rotationPlan = await rotationResponse.json();
         }
@@ -139,16 +147,16 @@ async function render() {
       }
 
       if (state.rotationPlan?.pages?.length) {
-        const rolePage = state.rotationPlan.pages[state.pageIndex % state.rotationPlan.pages.length];
-        const rolePayloadResponse = await fetch(`/display/${rolePage.id}/current`, { cache: "no-store" });
+        const rolePage = state.rotationPlan.currentPage?.id
+          ? state.rotationPlan.pages.find((page) => page.id === state.rotationPlan.currentPage.id) || state.rotationPlan.pages[0]
+          : state.rotationPlan.pages[state.pageIndex % state.rotationPlan.pages.length];
+        const rolePayloadResponse = await fetch(`/display/${encodeURIComponent(route.displayId)}/${encodeURIComponent(rolePage.id)}/current`, { cache: "no-store" });
         if (rolePayloadResponse.ok) {
           const rolePayload = await rolePayloadResponse.json();
           renderDynamicRolePage(rolePayload);
 
-          cycleDisplay(
-            { pages: state.rotationPlan.pages },
-            state.rotationPlan.rotationIntervalMs || 30000
-          );
+          const nextDelayMs = state.rotationPlan.countdownMs || rolePage.displayDurationMs || state.rotationPlan.rotationIntervalMs || 30000;
+          scheduleNextRender(nextDelayMs);
           return;
         }
       }
