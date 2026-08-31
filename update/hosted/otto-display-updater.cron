@@ -1,0 +1,1 @@
+*/2 * * * * root OTTO_UPDATE_BASE_URL=https://raw.githubusercontent.com/ronaldarroyowatson/otto-display-system/main/update/hosted /opt/otto-display-system/auto-update.sh
