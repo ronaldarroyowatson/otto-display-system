@@ -89,3 +89,16 @@ Purpose: Persistent project memory for Otto Display System architecture, workflo
 - Local workspace truth is maintained by Otto Kernel EDS and written to `runtime/extension-registry.json`.
 - Runtime, CLI, and display-system extension lookups should use EDS, not hardcoded extension wiring or static dependency lists.
 - Command/API access for EDS is routed through command-service contracts (`eds.*`).
+
+## Display Control System Authority (2026-09-01)
+
+- `external/otto/otto-display-control-system` is now the reusable appearance authority repository.
+- Appearance source-of-truth (themes, colors, typography, motion defaults) belongs in DCS contracts.
+- Runtime and Dev UI consumers should read DCS contract data and avoid duplicating style authority in behavior modules.
+- Behavior ownership remains in orchestrator and command-service layers.
+
+## GitHub Sync Notes (2026-09-01)
+
+- New reusable repo pushed: https://github.com/ronaldarroyowatson/otto-display-control-system
+- Root monorepo now tracks `external/otto/otto-display-control-system` as a gitlink pointer commit.
+- After Pi deploys that include runtime route additions, restart `otto-display-system.service` to ensure new routes are active.
