@@ -59,6 +59,16 @@ test('/content/display.json endpoint', async () => {
   assert.equal(body.version, '1.0.0');
 });
 
+test('/content/display-control.contract.json endpoint', async () => {
+  const response = await fetchOrSkip('/content/display-control.contract.json');
+  if (!response) return;
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(typeof body.version, 'string');
+  assert.ok(body.frontend && typeof body.frontend === 'object');
+  assert.ok(body.devUi && typeof body.devUi === 'object');
+});
+
 test('/display-config.json endpoint', async () => {
   const response = await fetchOrSkip('/display-config.json');
   if (!response) return;

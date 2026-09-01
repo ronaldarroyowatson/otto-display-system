@@ -70,6 +70,15 @@ function uniqueById<T extends { id: string }>(pages: T[]): T[] {
   return next;
 }
 
+function stableHash(input: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return hash >>> 0;
+}
+
 export function generateRotationPlan(
   config: DisplayConfigDocument,
   settings: OrchestratorSettings
@@ -109,6 +118,14 @@ export function generateRotationPlan(
   const tierList = Array.isArray(settings.tierList) && settings.tierList.length
     ? settings.tierList
     : [0, 1, 2, 3, 4];
+  const playlistOrder = settings.playlistOrder === "shuffle" ? "shuffle" : "priority";
+  const shuffleSeed = Number.isFinite(Number(settings.shuffleSeed)) ? Number(settings.shuffleSeed) : Date.now();
+  const manualOrder = Array.isArray(settings.manualPageOrder) ? settings.manualPageOrder : [];
+  const manualRank = new Map<string, number>();
+  for (let i = 0; i < manualOrder.length; i += 1) {
+    manualRank.set(manualOrder[i], i);
+  }
+
   const tierRank = new Map<number, number>();
   for (let i = 0; i < tierList.length; i += 1) {
     tierRank.set(tierList[i], i);
@@ -139,9 +156,20 @@ export function generateRotationPlan(
   }
 
   pages.sort((a, b) => {
-    const aRank = tierRank.has(a.tier) ? (tierRank.get(a.tier) as number) : Number.MAX_SAFE_INTEGER;
-    const bRank = tierRank.has(b.tier) ? (tierRank.get(b.tier) as number) : Number.MAX_SAFE_INTEGER;
-    if (aRank !== bRank) return aRank - bRank;
+    const aTierRank = tierRank.has(a.tier) ? (tierRank.get(a.tier) as number) : Number.MAX_SAFE_INTEGER;
+    const bTierRank = tierRank.has(b.tier) ? (tierRank.get(b.tier) as number) : Number.MAX_SAFE_INTEGER;
+    if (aTierRank !== bTierRank) return aTierRank - bTierRank;
+
+    if (playlistOrder === "shuffle") {
+      const aHash = stableHash(`${a.id}:${shuffleSeed}`);
+      const bHash = stableHash(`${b.id}:${shuffleSeed}`);
+      if (aHash !== bHash) return aHash - bHash;
+    } else {
+      const aOrder = manualRank.has(a.id) ? (manualRank.get(a.id) as number) : Number.MAX_SAFE_INTEGER;
+      const bOrder = manualRank.has(b.id) ? (manualRank.get(b.id) as number) : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+    }
+
     return a.id.localeCompare(b.id);
   });
 

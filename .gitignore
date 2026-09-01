@@ -18,6 +18,18 @@ runtime/extension-registry.json
 update/dist/
 update/hosted/archives/*.zip
 
+# Export and transfer artifacts
+export/
+otto-display-system-full-export/
+
+# Local runtime/generated content snapshots
+content/
+orchestrator.settings.json
+
+# Local scratch test files
+test-ui-*.mjs
+test-time-object.html
+
 # OS/editor files
 .DS_Store
 Thumbs.db

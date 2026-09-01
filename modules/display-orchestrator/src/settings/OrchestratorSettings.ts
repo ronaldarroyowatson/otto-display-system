@@ -58,6 +58,10 @@ export interface PageSettings {
 export interface OrchestratorSettings {
   pages: Record<string, PageSettings>;
   tierList: number[];
+  tierNames?: Record<string, string>;
+  playlistOrder?: "priority" | "shuffle";
+  shuffleSeed?: number;
+  manualPageOrder?: string[];
 }
 
 export const EMERGENCY_TIER = 0;
@@ -148,17 +152,48 @@ export function createDefaultPageSettings(pageId: string, pageName = pageId, pag
 
 export const defaultOrchestratorSettings: OrchestratorSettings = {
   tierList: [0, 1, 2, 3],
+  tierNames: {
+    "0": "Emergency",
+    "1": "Tier 1",
+    "2": "Tier 2",
+    "3": "Tier 3"
+  },
+  playlistOrder: "priority",
+  shuffleSeed: undefined,
+  manualPageOrder: ["hallway", "weather", "time"],
   pages: {
-    emergency: {
-      ...createDefaultPageSettings("emergency", "Emergency Tier", "emergency"),
-      enabled: true,
-      tier: 0
-    },
     hallway: createDefaultPageSettings("hallway", "Hallway", "custom"),
     weather: createDefaultPageSettings("weather", "Weather", "weather"),
     time: createDefaultPageSettings("time", "Time", "time")
   }
 };
+
+function normalizeTierNames(input: unknown, tierList: number[]): Record<string, string> {
+  const source = (input ?? {}) as Record<string, unknown>;
+  const names: Record<string, string> = {
+    "0": "Emergency"
+  };
+
+  for (const tier of tierList) {
+    const key = String(tier);
+    if (key === "0") continue;
+    const value = source[key];
+    names[key] = typeof value === "string" && value.trim() ? value.trim() : `Tier ${tier}`;
+  }
+
+  return names;
+}
+
+function normalizeManualPageOrder(input: unknown, pageIds: string[]): string[] {
+  const source = Array.isArray(input) ? input.filter((entry): entry is string => typeof entry === "string") : [];
+  const ordered = source.filter((entry) => pageIds.includes(entry));
+  for (const pageId of pageIds) {
+    if (!ordered.includes(pageId)) {
+      ordered.push(pageId);
+    }
+  }
+  return ordered;
+}
 
 function normalizeDuration(input: unknown): number {
   const value = Number(input);
@@ -284,6 +319,10 @@ export function normalizeOrchestratorSettings(input: Partial<OrchestratorSetting
 
   return {
     pages,
-    tierList: normalizeTierList(expanded)
+    tierList: normalizeTierList(expanded),
+    tierNames: normalizeTierNames(input.tierNames, normalizeTierList(expanded)),
+    playlistOrder: input.playlistOrder === "shuffle" ? "shuffle" : "priority",
+    shuffleSeed: Number.isFinite(Number(input.shuffleSeed)) ? Number(input.shuffleSeed) : undefined,
+    manualPageOrder: normalizeManualPageOrder(input.manualPageOrder, Object.keys(pages))
   };
 }

@@ -13,7 +13,56 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const DEV_UI_DIR = path.join(ROOT, 'external', 'otto', 'otto-design-system-dev-ui', 'src');
 const DISPLAY_CONTENT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-orchestrator', 'content', 'display.json');
+const DISPLAY_CONTROL_CONTRACT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-control-system', 'content', 'display-control.contract.json');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
+
+const DEFAULT_DISPLAY_CONTROL_CONTRACT = {
+  version: '0.1.0',
+  defaultTheme: 'midnight',
+  frontend: {
+    themes: {
+      midnight: {
+        colors: {
+          background: '#0b132b',
+          surface: 'rgba(255, 255, 255, 0.10)',
+          text: '#f4f7fb',
+          muted: '#dfe8f5',
+          accent: '#ffd166',
+          border: 'rgba(110, 202, 255, 0.95)'
+        },
+        fonts: {
+          body: '"Segoe UI", "Helvetica Neue", sans-serif'
+        },
+        backgrounds: {
+          page: 'linear-gradient(135deg, #0b132b 0%, #1c2541 42%, #3a506b 100%)'
+        },
+        motion: {
+          page: '320ms cubic-bezier(0.22, 1, 0.36, 1)'
+        }
+      }
+    }
+  },
+  devUi: {
+    colors: {
+      bg: 'radial-gradient(circle at 0% 0%, #20345e 0%, #0b132b 35%, #070b18 100%)',
+      panel: 'rgba(255, 255, 255, 0.08)',
+      border: 'rgba(255, 255, 255, 0.2)',
+      text: '#f4f7fb',
+      muted: '#bed0e8',
+      accent: '#8be9fd',
+      warn: '#ffd166',
+      ok: '#7de07d'
+    }
+  }
+};
+
+async function readDisplayControlContract() {
+  try {
+    return JSON.parse(await fs.readFile(DISPLAY_CONTROL_CONTRACT_PATH, 'utf8'));
+  } catch {
+    return DEFAULT_DISPLAY_CONTROL_CONTRACT;
+  }
+}
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
 const dependencyGraph = await discoverExtensionDependencyGraph(ROOT);
@@ -262,7 +311,9 @@ const server = http.createServer(async (request, response) => {
         designConfig = {};
       }
 
-      const mergedConfig = mergeDesignThemeConfig(baseConfig, designConfig);
+      const displayControlContract = await readDisplayControlContract();
+
+      const mergedConfig = mergeDesignThemeConfig(baseConfig, designConfig, displayControlContract);
       const settings = await readOrchestratorSettings();
       const finalConfig = applyOrchestratorSettingsToDisplayConfig(mergedConfig, settings);
       response.statusCode = 200;
@@ -313,6 +364,14 @@ const server = http.createServer(async (request, response) => {
       response.statusCode = 404;
       response.end('Not Found');
     }
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/content/display-control.contract.json') {
+    const contract = await readDisplayControlContract();
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.end(`${JSON.stringify(contract, null, 2)}\n`);
     return;
   }
 
