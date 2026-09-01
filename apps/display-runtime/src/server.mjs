@@ -14,14 +14,15 @@ const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const DEV_UI_DIR = path.join(ROOT, 'external', 'otto', 'otto-design-system-dev-ui', 'src');
 const DISPLAY_CONTENT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-orchestrator', 'content', 'display.json');
 const DISPLAY_CONTROL_CONTRACT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-control-system', 'content', 'display-control.contract.json');
+const DISPLAY_CONTROL_FALLBACK_CONTRACT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-control-system', 'content', 'display-control.fallback.contract.json');
 const MODULE_LOADER_CONFIG = path.join(ROOT, 'module-loader.config.json');
 
 const DEFAULT_DISPLAY_CONTROL_CONTRACT = {
   version: '0.1.0',
-  defaultTheme: 'midnight',
+  defaultTheme: 'otto-ocean',
   frontend: {
     themes: {
-      midnight: {
+      'otto-ocean': {
         colors: {
           background: '#0b132b',
           surface: 'rgba(255, 255, 255, 0.10)',
@@ -37,8 +38,41 @@ const DEFAULT_DISPLAY_CONTROL_CONTRACT = {
           page: 'linear-gradient(135deg, #0b132b 0%, #1c2541 42%, #3a506b 100%)'
         },
         motion: {
-          page: '320ms cubic-bezier(0.22, 1, 0.36, 1)'
+          page: '320ms cubic-bezier(0.22, 1, 0.36, 1)',
+          fadeDuration: '320ms',
+          slideDuration: '320ms',
+          dissolveDuration: '320ms'
         }
+      }
+    },
+    appearance: {
+      panel: {
+        appBackground: 'rgba(13, 24, 36, 0.82)',
+        headerBackground: 'rgba(11, 19, 34, 0.86)',
+        panelBackground: 'rgba(17, 27, 41, 0.78)',
+        tierItemBackground: 'rgba(0, 0, 0, 0.16)',
+        cardBackground: 'rgba(0, 0, 0, 0.2)',
+        badgeBackground: 'rgba(255, 255, 255, 0.12)'
+      },
+      borders: {
+        appWidth: '3px',
+        header: 'rgba(255, 255, 255, 0.12)',
+        card: 'rgba(255, 255, 255, 0.16)',
+        badge: 'rgba(255, 255, 255, 0.12)'
+      },
+      radii: {
+        app: '12px',
+        card: '16px'
+      },
+      shadows: {
+        app: '0 0 0 1px rgba(102, 214, 255, 0.2), 0 0 32px rgba(102, 214, 255, 0.12)',
+        cardInset: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+      },
+      clock: {
+        face: '#f4f7fb',
+        hour: '#ffd166',
+        minute: '#9be7ff',
+        second: '#ff6b6b'
       }
     }
   },
@@ -46,22 +80,63 @@ const DEFAULT_DISPLAY_CONTROL_CONTRACT = {
     colors: {
       bg: 'radial-gradient(circle at 0% 0%, #20345e 0%, #0b132b 35%, #070b18 100%)',
       panel: 'rgba(255, 255, 255, 0.08)',
+      panelStrong: 'rgba(255, 255, 255, 0.12)',
+      controlBg: 'rgba(6, 10, 25, 0.8)',
+      buttonBg: 'rgba(9, 16, 38, 0.9)',
+      tierBg: 'rgba(0, 0, 0, 0.16)',
+      pageCardBg: 'rgba(0, 0, 0, 0.2)',
       border: 'rgba(255, 255, 255, 0.2)',
       text: '#f4f7fb',
       muted: '#bed0e8',
       accent: '#8be9fd',
       warn: '#ffd166',
       ok: '#7de07d'
+    },
+    typography: {
+      body: '"Segoe UI", "Helvetica Neue", sans-serif',
+      mono: 'ui-monospace, SFMono-Regular, Menlo, monospace'
+    },
+    radii: {
+      card: '12px',
+      control: '8px'
     }
   }
 };
 
-async function readDisplayControlContract() {
-  try {
-    return JSON.parse(await fs.readFile(DISPLAY_CONTROL_CONTRACT_PATH, 'utf8'));
-  } catch {
-    return DEFAULT_DISPLAY_CONTROL_CONTRACT;
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function deepMerge(base, override) {
+  if (!isPlainObject(base) || !isPlainObject(override)) {
+    return override === undefined ? base : override;
   }
+
+  const merged = { ...base };
+  for (const [key, overrideValue] of Object.entries(override)) {
+    const baseValue = merged[key];
+    if (isPlainObject(baseValue) && isPlainObject(overrideValue)) {
+      merged[key] = deepMerge(baseValue, overrideValue);
+      continue;
+    }
+    merged[key] = overrideValue;
+  }
+
+  return merged;
+}
+
+async function readJsonFileOrNull(filePath) {
+  try {
+    return JSON.parse(await fs.readFile(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function readDisplayControlContract() {
+  const fallbackContract = (await readJsonFileOrNull(DISPLAY_CONTROL_FALLBACK_CONTRACT_PATH)) ?? DEFAULT_DISPLAY_CONTROL_CONTRACT;
+  const developerContract = await readJsonFileOrNull(DISPLAY_CONTROL_CONTRACT_PATH);
+  return deepMerge(fallbackContract, developerContract ?? {});
 }
 
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);

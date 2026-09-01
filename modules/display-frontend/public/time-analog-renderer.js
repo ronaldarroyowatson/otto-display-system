@@ -1,5 +1,10 @@
 function renderClockHands(canvas, date) {
   const ctx = canvas.getContext('2d');
+  const rootStyles = getComputedStyle(document.documentElement);
+  const faceColor = rootStyles.getPropertyValue('--clock-face-color').trim() || '#f4f7fb';
+  const hourColor = rootStyles.getPropertyValue('--clock-hour-color').trim() || '#ffd166';
+  const minuteColor = rootStyles.getPropertyValue('--clock-minute-color').trim() || '#9be7ff';
+  const secondColor = rootStyles.getPropertyValue('--clock-second-color').trim() || '#ff6b6b';
   const w = canvas.width;
   const h = canvas.height;
   const r = Math.min(w, h) / 2 - 8;
@@ -7,7 +12,7 @@ function renderClockHands(canvas, date) {
   const cy = h / 2;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = '#f4f7fb';
+  ctx.strokeStyle = faceColor;
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -27,9 +32,9 @@ function renderClockHands(canvas, date) {
     ctx.stroke();
   };
 
-  drawHand(hours, 12, r * 0.5, 5, '#ffd166');
-  drawHand(minutes, 60, r * 0.75, 4, '#9be7ff');
-  drawHand(seconds, 60, r * 0.85, 2, '#ff6b6b');
+  drawHand(hours, 12, r * 0.5, 5, hourColor);
+  drawHand(minutes, 60, r * 0.75, 4, minuteColor);
+  drawHand(seconds, 60, r * 0.85, 2, secondColor);
 }
 
 function renderTimeAnalogObject(object, container) {

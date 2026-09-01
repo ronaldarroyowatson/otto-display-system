@@ -19,6 +19,7 @@ function resolveContractTheme(contract, themeName) {
 export function mergeDesignThemeConfig(baseConfig, designConfig, displayControlContract) {
   const nextConfig = JSON.parse(JSON.stringify(baseConfig));
   const themeMap = nextConfig.themes ?? {};
+  const contractAppearance = displayControlContract?.frontend?.appearance;
 
   for (const themeName of Object.keys(themeMap)) {
     const theme = themeMap[themeName];
@@ -91,7 +92,11 @@ export function mergeDesignThemeConfig(baseConfig, designConfig, displayControlC
 
   nextConfig.dsc = {
     ...(nextConfig.dsc ?? {}),
-    theme: nextConfig.dsc?.theme ?? 'midnight'
+    theme: nextConfig.dsc?.theme ?? displayControlContract?.defaultTheme ?? 'otto-ocean',
+    appearance: {
+      ...(nextConfig.dsc?.appearance ?? {}),
+      ...(contractAppearance && typeof contractAppearance === 'object' ? contractAppearance : {})
+    }
   };
 
   return nextConfig;

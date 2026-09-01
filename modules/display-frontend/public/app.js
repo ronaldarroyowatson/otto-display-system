@@ -16,7 +16,7 @@ function getRoute() {
   return { displayId: defaultDisplayId, pageId: null };
 }
 
-function applyTheme(themeDefinition) {
+function applyTheme(themeDefinition, appearanceDefinition = {}) {
   const root = document.documentElement;
   const theme = themeDefinition ?? {
     colors: { background: "#0b132b", surface: "rgba(255, 255, 255, 0.10)", text: "#f4f7fb", muted: "#dfe8f5", accent: "#ffd166", border: "rgba(110, 202, 255, 0.95)" },
@@ -24,14 +24,38 @@ function applyTheme(themeDefinition) {
     backgrounds: { page: "linear-gradient(135deg, #0b132b 0%, #1c2541 42%, #3a506b 100%)" },
     motion: { page: "320ms cubic-bezier(0.22, 1, 0.36, 1)" }
   };
+  const appearance = appearanceDefinition ?? {};
+  const panel = appearance.panel ?? {};
+  const borders = appearance.borders ?? {};
+  const radii = appearance.radii ?? {};
+  const shadows = appearance.shadows ?? {};
+  const clock = appearance.clock ?? {};
 
   root.style.setProperty("--display-bg", theme.backgrounds?.page ?? theme.colors?.background ?? "#0b132b");
-  root.style.setProperty("--panel-bg", theme.colors?.surface ?? "rgba(255, 255, 255, 0.10)");
+  root.style.setProperty("--panel-bg", panel.panelBackground ?? theme.colors?.surface ?? "rgba(255, 255, 255, 0.10)");
   root.style.setProperty("--text", theme.colors?.text ?? "#f4f7fb");
   root.style.setProperty("--muted", theme.colors?.muted ?? "#dfe8f5");
   root.style.setProperty("--accent", theme.colors?.accent ?? "#ffd166");
   root.style.setProperty("--border", theme.colors?.border ?? "rgba(110, 202, 255, 0.95)");
   root.style.setProperty("--page-transition", theme.motion?.page ?? "320ms cubic-bezier(0.22, 1, 0.36, 1)");
+  root.style.setProperty("--transition-fade-duration", theme.motion?.fadeDuration ?? "320ms");
+  root.style.setProperty("--transition-slide-duration", theme.motion?.slideDuration ?? "320ms");
+  root.style.setProperty("--transition-dissolve-duration", theme.motion?.dissolveDuration ?? "320ms");
+  root.style.setProperty("--shell-bg", panel.appBackground ?? "rgba(13, 24, 36, 0.82)");
+  root.style.setProperty("--header-bg", panel.headerBackground ?? "rgba(11, 19, 34, 0.86)");
+  root.style.setProperty("--header-border", borders.header ?? "rgba(255, 255, 255, 0.12)");
+  root.style.setProperty("--badge-bg", panel.badgeBackground ?? "rgba(255, 255, 255, 0.12)");
+  root.style.setProperty("--badge-border", borders.badge ?? "rgba(255, 255, 255, 0.12)");
+  root.style.setProperty("--card-border", borders.card ?? "rgba(255, 255, 255, 0.16)");
+  root.style.setProperty("--app-border-width", borders.appWidth ?? "3px");
+  root.style.setProperty("--app-radius", radii.app ?? "12px");
+  root.style.setProperty("--card-radius", radii.card ?? "16px");
+  root.style.setProperty("--app-shadow", shadows.app ?? "0 0 0 1px rgba(102, 214, 255, 0.2), 0 0 32px rgba(102, 214, 255, 0.12)");
+  root.style.setProperty("--card-shadow-inset", shadows.cardInset ?? "inset 0 1px 0 rgba(255,255,255,0.06)");
+  root.style.setProperty("--clock-face-color", clock.face ?? "#f4f7fb");
+  root.style.setProperty("--clock-hour-color", clock.hour ?? "#ffd166");
+  root.style.setProperty("--clock-minute-color", clock.minute ?? "#9be7ff");
+  root.style.setProperty("--clock-second-color", clock.second ?? "#ff6b6b");
   root.style.setProperty("font-family", theme.fonts?.body ?? '"Segoe UI", "Helvetica Neue", sans-serif');
 }
 
@@ -189,7 +213,7 @@ async function render() {
     const transition = display.transition || config.dsc?.transition || "fade";
     const moduleCatalog = config.moduleCatalog ?? {};
 
-    applyTheme(theme);
+    applyTheme(theme, config.dsc?.appearance ?? {});
     renderSingleModulePage(display, currentPage, moduleId, transition, moduleCatalog);
     document.title = `${display.name} | ${currentPage.label}`;
     cycleDisplay(display, display.cycleInterval || config.dsc?.cycleInterval || 10000);

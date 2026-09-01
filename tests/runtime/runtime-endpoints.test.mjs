@@ -102,6 +102,54 @@ test('design-system merge test', async () => {
   assert.equal(merged.themes.midnight.motion.page, '240ms cubic-bezier(0.2, 0, 0, 1)');
 });
 
+test('display-control contract values override theme while preserving base fallback values', async () => {
+  const base = {
+    dsc: { theme: 'midnight' },
+    themes: {
+      midnight: {
+        colors: { background: '#111111', surface: '#222222', text: '#333333', muted: '#444444', accent: '#555555', border: '#666666' },
+        fonts: { body: 'Base Font' },
+        motion: { page: '100ms ease' },
+        backgrounds: { page: 'linear-gradient(0deg, #000000, #111111)' }
+      }
+    }
+  };
+
+  const contract = {
+    defaultTheme: 'otto-ocean',
+    frontend: {
+      themes: {
+        'otto-ocean': {
+          colors: { accent: '#abc123', text: '#fefefe' },
+          motion: { page: '500ms ease-in-out' }
+        }
+      },
+      appearance: {
+        panel: { appBackground: 'rgba(1,2,3,0.5)' }
+      }
+    }
+  };
+
+  const merged = mergeDesignThemeConfig(base, {}, contract);
+  assert.equal(merged.themes.midnight.colors.accent, '#abc123');
+  assert.equal(merged.themes.midnight.colors.text, '#fefefe');
+  assert.equal(merged.themes.midnight.colors.background, '#111111');
+  assert.equal(merged.themes.midnight.motion.page, '500ms ease-in-out');
+  assert.equal(merged.dsc.appearance.panel.appBackground, 'rgba(1,2,3,0.5)');
+});
+
+test('fallback and developer contracts provide layered defaults and overrides', async () => {
+  const fallbackRaw = await fs.readFile(new URL('../../external/otto/otto-display-control-system/content/display-control.fallback.contract.json', import.meta.url), 'utf8');
+  const overrideRaw = await fs.readFile(new URL('../../external/otto/otto-display-control-system/content/display-control.contract.json', import.meta.url), 'utf8');
+  const fallback = JSON.parse(fallbackRaw);
+  const override = JSON.parse(overrideRaw);
+
+  assert.equal(typeof fallback.devUi?.colors?.panelStrong, 'string');
+  assert.equal(typeof fallback.frontend?.appearance?.clock?.hour, 'string');
+  assert.equal(typeof override.devUi?.colors?.accent, 'string');
+  assert.equal(typeof override.frontend?.themes?.['otto-ocean']?.colors?.accent, 'string');
+});
+
 test('display-config merge test using workspace files', async () => {
   const baseRaw = await fs.readFile(new URL('../../modules/display-frontend/public/display-config.json', import.meta.url), 'utf8');
   const designRaw = await fs.readFile(new URL('../../design-system.config.json', import.meta.url), 'utf8');
