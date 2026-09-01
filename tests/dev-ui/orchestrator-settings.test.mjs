@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const baseUrl = process.env.OTTO_TEST_BASE_URL ?? 'http://127.0.0.1:8080';
 const runId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -43,6 +46,8 @@ async function eventually(check, attempts = 8) {
   return false;
 }
 
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
 test('settings page loads with per-page sections', async () => {
   const response = await maybeFetch('/dev-ui/orchestrator-settings');
   if (!response) return;
@@ -52,6 +57,46 @@ test('settings page loads with per-page sections', async () => {
   assert.match(html, /Per-Page Controls/i);
   assert.match(html, /Add Page/i);
   assert.match(html, /Trigger-Aware Preview/i);
+  assert.match(html, /Playlist Order/i);
+  assert.match(html, /tierList/i);
+});
+
+test('tier names persist through orchestrator settings', async () => {
+  const settingsBefore = await csl('orchestrator.settings.get', { displayId: 'hallway' });
+  if (!settingsBefore) return;
+
+  const nextTierNames = {
+    ...(settingsBefore.tierNames || {}),
+    '1': `Tier One ${runId}`
+  };
+
+  const setResponse = await csl('orchestrator.settings.set', {
+    displayId: 'hallway',
+    patch: { tierNames: nextTierNames }
+  });
+  if (!setResponse) return;
+
+  const settingsAfter = await csl('orchestrator.settings.get', { displayId: 'hallway' });
+  if (!settingsAfter) return;
+  assert.equal(settingsAfter.tierNames?.['1'], nextTierNames['1']);
+});
+
+test('tier manager click handler ignores rename input clicks', async () => {
+  const scriptPath = path.join(
+    ROOT,
+    'external',
+    'otto',
+    'otto-design-system-dev-ui',
+    'src',
+    'scripts',
+    'orchestrator-settings.js'
+  );
+  const source = await fs.readFile(scriptPath, 'utf8');
+
+  assert.match(
+    source,
+    /if \(!\['move-tier-up', 'move-tier-down', 'delete-tier'\]\.includes\(action\)\) return;/
+  );
 });
 
 test('open-page settings reflect current per-page state', async () => {
