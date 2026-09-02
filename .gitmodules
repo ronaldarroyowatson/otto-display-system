@@ -1,0 +1,6 @@
+[submodule "external/otto/otto-osss"]
+	path = external/otto/otto-osss
+	url = https://github.com/otto-systems/otto-osss.git
+[submodule "external/otto/otto-crypto"]
+	path = external/otto/otto-crypto
+	url = https://github.com/otto-systems/otto-crypto.git

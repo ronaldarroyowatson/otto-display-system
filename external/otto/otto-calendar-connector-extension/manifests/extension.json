@@ -1,0 +1,18 @@
+{
+  "id": "otto.calendar.connector.extension",
+  "name": "Otto Calendar Connector Extension",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "description": "Provides calendar event ingestion and normalization from Microsoft Outlook and Google Calendar via OAuth.",
+  "author": "Otto Systems",
+  "entrypoints": {
+    "core": "src/calendar-core.ts",
+    "commands": "src/calendar-commands.ts",
+    "providers": "src/providers/index.ts"
+  },
+  "capabilities": ["calendar", "events", "providers", "normalization"],
+  "dependencies": {
+    "required": ["otto.auth.extension"],
+    "optional": []
+  }
+}

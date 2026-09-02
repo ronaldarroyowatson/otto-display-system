@@ -3,34 +3,35 @@
  * Provides runtime-safe calendar operations for command-service handlers.
  * Stores credentials and tokens locally only (not committed to repos).
  * Uses OSSS for versioned state management and otto-crypto for encryption.
+ *
+ * Note: Uses display-runtime adapters for OSSS and crypto (Node.js implementations).
+ * Those adapters follow contracts from external/otto/otto-osss and external/otto/otto-crypto.
  */
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Optional: Import OSSS for versioned state management
+// Optional: Import OSSS adapter from display-runtime
 // Fallback to basic file I/O if not available
 let StateManager;
 try {
-  const osss = await import("otto-osss");
-  StateManager = osss.StateManager;
+  const displayRuntimeLib = await import("../../../../../../apps/display-runtime/src/lib/osss-adapter.mjs");
+  StateManager = displayRuntimeLib.StateManager;
 } catch (err) {
-  // otto-osss not installed; use fallback
+  // OSSS adapter not available; use fallback
   StateManager = null;
 }
 
-// Optional: Import crypto for encryption
+// Optional: Import crypto adapter from display-runtime
 // Fallback to plaintext if not available
-let encrypt, decrypt;
+let CryptoAdapter;
 try {
-  const crypto = await import("otto-crypto");
-  encrypt = crypto.encrypt;
-  decrypt = crypto.decrypt;
+  const displayRuntimeCrypto = await import("../../../../../../apps/display-runtime/src/lib/crypto-adapter.mjs");
+  CryptoAdapter = displayRuntimeCrypto.CryptoAdapter;
 } catch (err) {
-  // otto-crypto not installed; use fallback
-  encrypt = null;
-  decrypt = null;
+  // Crypto adapter not available; use fallback
+  CryptoAdapter = null;
 }
 
 const EXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -278,9 +279,9 @@ async function setProviderConfig(providerId, clientId, clientSecret, encryptionK
   
   // Optionally encrypt clientSecret if crypto is available and key provided
   let secretToStore = clientSecret.trim();
-  if (encrypt && encryptionKey) {
+  if (CryptoAdapter && encryptionKey) {
     try {
-      const encrypted = encrypt(secretToStore, encryptionKey);
+      const encrypted = CryptoAdapter.encrypt(secretToStore, encryptionKey);
       secretToStore = JSON.stringify(encrypted);
       provider.__encrypted = true;
     } catch (err) {
@@ -336,10 +337,10 @@ async function authenticateProvider(providerId, authorizationCode, redirectUri, 
 
     // Decrypt clientSecret if encrypted
     let clientSecret = provider.clientSecret;
-    if (provider.__encrypted && decrypt && encryptionKey) {
+    if (provider.__encrypted && CryptoAdapter && encryptionKey) {
       try {
         const encrypted = JSON.parse(clientSecret);
-        clientSecret = decrypt(encrypted, encryptionKey);
+        clientSecret = CryptoAdapter.decrypt(encrypted, encryptionKey);
       } catch (err) {
         throw new Error(`Failed to decrypt clientSecret: ${err.message}`);
       }
