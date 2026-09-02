@@ -12,6 +12,7 @@ const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const DEV_UI_DIR = path.join(ROOT, 'external', 'otto', 'otto-design-system-dev-ui', 'src');
+const COMMAND_SCHEMAS_DIR = path.join(ROOT, 'external', 'otto', 'otto-command-service', 'src', 'schemas');
 const DISPLAY_CONTENT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-orchestrator', 'content', 'display.json');
 const DISPLAY_CONTROL_CONTRACT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-control-system', 'content', 'display-control.contract.json');
 const DISPLAY_CONTROL_FALLBACK_CONTRACT_PATH = path.join(ROOT, 'external', 'otto', 'otto-display-control-system', 'content', 'display-control.fallback.contract.json');
@@ -177,6 +178,42 @@ const DEFAULT_ORCHESTRATOR_SETTINGS = {
   scheduleTriggers: { classChange: true, passingPeriod: true },
   phaseTriggers: { chapel: true, assembly: true, emergency: true }
 };
+
+let cachedCommandApiRoutes;
+
+async function getCommandApiRoutes() {
+  if (cachedCommandApiRoutes) {
+    return cachedCommandApiRoutes;
+  }
+
+  const routes = new Map();
+  const files = (await fs.readdir(COMMAND_SCHEMAS_DIR)).filter((entry) => entry.endsWith('.json')).sort();
+
+  for (const file of files) {
+    const schema = JSON.parse(await fs.readFile(path.join(COMMAND_SCHEMAS_DIR, file), 'utf8'));
+    const commandName = String(schema?.name ?? '').trim();
+    const exposedAs = Array.isArray(schema?.routing?.exposedAs) ? schema.routing.exposedAs : [];
+    const method = String(schema?.routing?.http?.method ?? '').toUpperCase();
+    const routePath = String(schema?.routing?.http?.path ?? '').trim();
+
+    if (!commandName || !method || !routePath || !exposedAs.includes('api')) {
+      continue;
+    }
+
+    routes.set(`${method} ${routePath}`, commandName);
+  }
+
+  cachedCommandApiRoutes = routes;
+  return routes;
+}
+
+function queryParamsToPayload(searchParams) {
+  const payload = {};
+  for (const [key, value] of searchParams.entries()) {
+    payload[key] = value;
+  }
+  return payload;
+}
 
 async function readOrchestratorSettings() {
   try {
@@ -618,6 +655,30 @@ const server = http.createServer(async (request, response) => {
 
     const payload = body.payload ?? {};
     const result = await executeRoutedCommand(command, payload);
+    sendJson(response, 200, result);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/v1/commands/calendar/providers') {
+    const payload = await executeRoutedCommand('calendar.get.provider.config', queryParamsToPayload(url.searchParams));
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/v1/commands/calendar/providers') {
+    const body = await readJsonBody(request);
+    const payload = await executeRoutedCommand('calendar.set.provider.config', body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  const commandApiRoutes = await getCommandApiRoutes();
+  const commandName = commandApiRoutes.get(`${request.method} ${url.pathname}`);
+  if (commandName) {
+    const payload = request.method === 'GET'
+      ? queryParamsToPayload(url.searchParams)
+      : await readJsonBody(request);
+    const result = await executeRoutedCommand(commandName, payload);
     sendJson(response, 200, result);
     return;
   }

@@ -44,10 +44,14 @@ foreach ($folderName in @("modules", "apps", "config", "schemas")) {
 }
 
 foreach ($folderName in @(
+  "external/otto/otto-api-extension",
+  "external/otto/otto-cli-extension",
   "external/otto/otto-command-service",
   "external/otto/otto-debug-extension",
+  "external/otto/otto-calendar-connector-extension",
   "external/otto/otto-kernel",
   "external/otto/otto-file-extension",
+  "external/otto/otto-extension-index",
   "external/otto/otto-display-control-system",
   "external/otto/otto-design-system-dev-ui",
   "external/otto/otto-display-orchestrator",

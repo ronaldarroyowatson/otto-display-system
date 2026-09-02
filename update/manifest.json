@@ -1,6 +1,6 @@
 ﻿{
   "packageId": "otto-display-system",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "generatedAt": "REPLACE_AT_BUILD",
   "modules": [
     "display-orchestrator",
@@ -13,10 +13,18 @@
   "includes": {
     "apps": ["apps/display-runtime", "apps/runtime-shared"],
     "external": [
+      "external/otto/otto-api-extension",
+      "external/otto/otto-cli-extension",
       "external/otto/otto-command-service",
+      "external/otto/otto-calendar-connector-extension",
       "external/otto/otto-debug-extension",
       "external/otto/otto-kernel",
-      "external/otto/otto-file-extension"
+      "external/otto/otto-file-extension",
+      "external/otto/otto-extension-index",
+      "external/otto/otto-design-system-dev-ui",
+      "external/otto/otto-display-control-system",
+      "external/otto/otto-display-orchestrator",
+      "external/otto/otto-extensions"
     ],
     "frontendAssets": ["modules/display-frontend/public"],
     "configs": ["config", "module-loader.config.json"],
