@@ -28,6 +28,40 @@ orchestrator.settings.json
 
 # Local scratch test files
 test-ui-*.mjs
+
+# SECURITY: Local secrets and credentials (MUST NOT be committed)
+# OAuth credentials, tokens, and sensitive configuration
+**/mempalace/
+**/secrets/
+**/tokens/
+.env
+.env.local
+.env.*.local
+
+# Per-extension secret storage
+external/otto/otto-calendar-connector-extension/mempalace/
+external/otto/otto-auth-extension/mempalace/
+external/otto/otto-calendar-connector-extension/.secrets/
+external/otto/otto-auth-extension/.secrets/
+
+# Log files that may contain sensitive data
+logs/
+debug/
+*.log.json
+debug-logs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
 test-time-object.html
 
 # OS/editor files
