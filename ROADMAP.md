@@ -456,29 +456,27 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 
 ---
 
-## 📦 Optional: Phase 5 Extension Extraction (8-10 hours, MEDIUM priority)
+## 📦 Phase 5 Extension Extraction (Completed)
 
-These are display-specific modules that could become reusable extensions:
+This extraction tranche is complete and now tracked as shipped reusable extensions:
 
 ### otto-schedule-resolver-extension
 
 - Source: `modules/display-schedule`
-- Resolve phase schedules from master calendars
-- Create separate repo in otto-extensions
+- Status: ✅ created in `otto-extensions`, wired through command-service and generated surfaces
 
 ### otto-assignments-normalizer-extension
 
 - Source: `modules/display-assignments`
-- Normalize FACTS CSV into canonical format
-- Create separate repo in otto-extensions
+- Status: ✅ created in `otto-extensions`, wired through command-service and generated surfaces
+- Follow-up completed: `assignments.import` handler now routes via extension runtime (`assignments.refresh`) rather than the local module endpoint
 
 ### otto-api-gateway-factory-extension
 
 - Source: `modules/display-api-interface`
-- Factory for multi-provider API gateways
-- Create separate repo in otto-extensions
+- Status: ✅ created in `otto-extensions`, wired through command-service and generated surfaces
 
-**Why optional:** No security issues, code already works. Can do after functional remediation or in parallel.
+**Outcome:** Reusable feature logic moved to dedicated extension repos and integrated into update packaging.
 
 ---
 
@@ -515,7 +513,7 @@ These are display-specific modules that could become reusable extensions:
 | 2b | Integrate otto-crypto | 10-12 days | Week 2-3 | Blocked on FFI |
 | 3 | Integrate otto-kernel | 6-8 days | Week 4-5 | Ready |
 | 4 | Testing & Pi validation | 5-7 days | Week 6 | Ready |
-| 5 | Extension extraction | 8-10 hrs | Optional | Low priority |
+| 5 | Extension extraction | 8-10 hrs | ✅ Complete | Delivered |
 | **Total** | **Complete DRY elimination** | **40-48 days** | **6 weeks** | |
 
 ---

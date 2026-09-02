@@ -418,21 +418,25 @@ This handoff document maintains continuous progress tracking across the 6-week D
 
 ### Issue: Submodule Follow-ups (MEDIUM)
 
-### Otto-data-extension & otto-display-control-system
+### Extension Extraction Follow-Up
 
-**Status:** Resolved for data extension; ownership follow-up remains for display-control-system
+**Status:** Data/schedule/assignments/gateway extraction complete; ownership follow-up remains for display-control-system
 
 **Verified Findings:**
 
 - `otto-design-system-dev-ui` exists in `otto-extensions` and is now a working submodule
-- `otto-data-extension` now exists at `otto-extensions/otto-data-extension` and is wired into command-service and update packaging
-- `otto-display-control-system` is a valid git submodule path and is now mapped in `.gitmodules`, but points to a user-owned repo
+- `otto-data-extension` exists at `otto-extensions/otto-data-extension` and is wired into command-service and update packaging
+- `otto-schedule-resolver-extension` exists at `otto-extensions/otto-schedule-resolver-extension` and is wired into command-service and update packaging
+- `otto-assignments-normalizer-extension` exists at `otto-extensions/otto-assignments-normalizer-extension` and is wired into command-service and update packaging
+- `otto-api-gateway-factory-extension` exists at `otto-extensions/otto-api-gateway-factory-extension` and is wired into command-service and update packaging
+- `assignments.import` now routes via the assignments extension runtime path instead of the local `modules/display-assignments` endpoint
+- `otto-display-control-system` is a valid git submodule path and is mapped in `.gitmodules`, but points to a user-owned repo
 
 **Investigation Needed:**
 
 - [ ] Confirm whether `otto-display-control-system` should remain user-owned or be moved to canonical org
 
-**Action:** Keep current mapping stable and close these two ownership/classification decisions before Phase 3 extraction
+**Action:** Keep current mapping stable and proceed with Phase 1 update-script remediation and Phase 3 kernel lifecycle integration.
 
 ---
 
@@ -450,7 +454,8 @@ This handoff document maintains continuous progress tracking across the 6-week D
 | 2.0 Phase 2 Impl | ⏳ | 22-27 days | Not started | Week 3-4 |
 | 3.0 Phase 3 Impl | ⏳ | 6-8 days | Not started | Week 4-5 |
 | 4.0 Testing & Val | ⏳ | 5-7 days | Not started | Week 6 |
-| **Total** | | **40-48 days** | **8+ days** | **Phase 1 research active** |
+| 5.0 Extension Extraction | ✅ | 8-10 hrs | Complete | Data + schedule + assignments + gateway shipped |
+| **Total** | | **40-48 days** | **8+ days** | **Phase 1 research active, Phase 5 complete** |
 
 ---
 
