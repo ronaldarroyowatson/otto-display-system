@@ -181,6 +181,20 @@ This handoff document maintains continuous progress tracking across the 6-week D
 - `update/hosted/rollback-display-system.sh` -> replace manual archive retrieval/unzip with command-service rollback/update command path.
 - `tools/build-update-package.ps1` -> split into packaging-only concern vs update apply concern; update apply logic must move to command-service flow.
 
+**Command Parity Checklist (Phase 1.0):**
+- [x] Service lifecycle commands present in registry (`service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`).
+- [x] Config commands present in registry (`config.show`, `config.set`).
+- [x] Generated CLI and API command surfaces contain the same command set.
+- [ ] Manifest resolution/version compare command identified and mapped.
+- [ ] Download/apply package command identified and mapped.
+- [ ] Rollback command identified and mapped.
+- [ ] Scheduling command path identified for periodic update checks.
+
+**Current Gap Summary:**
+- Present now: service/config command coverage.
+- Missing or not yet mapped: end-to-end update orchestration commands for manifest evaluation, payload apply, and rollback flow.
+- Action required: add or locate command-service schemas for update orchestration before deleting script logic that currently implements those steps.
+
 ---
 
 ### Milestone 1.1: Phase 1 Implementation - Remove otto-update Duplicates
