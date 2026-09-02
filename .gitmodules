@@ -4,3 +4,18 @@
 [submodule "external/otto/otto-crypto"]
 	path = external/otto/otto-crypto
 	url = https://github.com/otto-systems/otto-crypto.git
+[submodule "external/otto/otto-protocol"]
+	path = external/otto/otto-protocol
+	url = https://github.com/otto-systems/otto-protocol.git
+[submodule "external/otto/otto-kernel"]
+	path = external/otto/otto-kernel
+	url = https://github.com/otto-systems/otto-kernel.git
+[submodule "external/otto/otto-command-service"]
+	path = external/otto/otto-command-service
+	url = https://github.com/otto-systems/otto-command-service.git
+[submodule "external/otto/otto-server"]
+	path = external/otto/otto-server
+	url = https://github.com/otto-systems/otto-server.git
+[submodule "external/otto/otto-update"]
+	path = external/otto/otto-update
+	url = https://github.com/otto-systems/otto-update.git
