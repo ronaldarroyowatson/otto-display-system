@@ -29,10 +29,12 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 ## 🚨 Critical Violations (4 Found)
 
 ### Violation #1: UPDATE MECHANISM (CRITICAL)
+
 **Canonical Source:** `otto-update` (Rust implementation)  
 **Location:** `/tools/*` and `/update/hosted/*`  
 **Problem:** 7 custom scripts duplicate version checking, deferral logic, rollback  
 **Files:**
+
 - `tools/build-update-package.ps1` (88 lines)
 - `tools/install-update.ps1` (29 lines)
 - `tools/register-auto-update.ps1` (15 lines)
@@ -46,11 +48,13 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Effort:** 18-22 days
 
 ### Violation #2: CRYPTOGRAPHY (CRITICAL)
+
 **Canonical Source:** `otto-crypto` (Rust with AES-256-GCM, HKDF, signing)  
 **Location:** `apps/display-runtime/src/lib/crypto-adapter.mjs` (REMOVED ✅)  
 **Problem:** Custom Node.js implementation lacks key zeroization, signing, proper security  
 **Why Removed:** Adapters are themselves DRY violations - cannot use JS for crypto  
 **Dependencies:**
+
 - `external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs` (token encryption)
 - Requires FFI or Node.js bindings from otto-crypto
 
@@ -60,11 +64,13 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Effort:** 10-12 days
 
 ### Violation #3: STATE STORAGE (CRITICAL)
+
 **Canonical Source:** `otto-osss` (Rust with versioned state, vault, audit trail)  
 **Location:** `apps/display-runtime/src/lib/osss-adapter.mjs` (REMOVED ✅)  
 **Problem:** File-based storage without vault encryption, no audit trail, plaintext fallback  
 **Why Removed:** Adapters are themselves DRY violations - cannot use JS for state vault  
 **Affected Data:**
+
 - `mempalace/calendar-provider-tokens.json` - OAuth tokens (PLAINTEXT!)
 - `mempalace/calendar-provider-config.json` - OAuth secrets (PLAINTEXT!)
 - Display orchestrator state
@@ -76,11 +82,13 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Effort:** 12-15 days
 
 ### Violation #4: PROCESS LIFECYCLE (HIGH)
+
 **Canonical Source:** `otto-kernel` (Module discovery, lifecycle management)  
 **Location:** `apps/display-runtime/src/server.mjs`, `install/otto-display-system/scripts/otto-display-system.service`  
 **Problem:** Direct systemd management bypasses kernel lifecycle coordination  
 **Current State:** display-runtime manages its own process independently  
 **Missing Integration:**
+
 - No graceful shutdown through kernel
 - No module initialization callbacks
 - Process lifecycle isolated from otto ecosystem
@@ -95,13 +103,22 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 ## 📋 Completed Work
 
 ### ✅ Phase 0: Structural DRY Audit & Submodule Conversion
-**Status:** MOSTLY COMPLETE (17/19 submodules)  
-**Commits:** 
+
+**Status:** MOSTLY COMPLETE (22 mapped submodules, ownership follow-up remaining)  
+**Commits:**
+
 - `02604c7` - Phase 1: Convert core infrastructure (5/5 repos)
 - `3e77b16` - Phase 2: Convert otto-extensions (10/12 repos)
 - `3bc45bb` - Remove crypto/osss adapters (DRY violation fix)
 
+**Follow-up completed (2026-09-02):**
+
+- mapped `otto-design-system-dev-ui` as submodule (`otto-extensions`)
+- created and mapped `otto-data-extension` as submodule (`otto-extensions`)
+- restored missing `.gitmodules` mappings for `otto-display-control-system`, `otto-module-template`, and `otto-sample-module`
+
 **Completed Submodules:**
+
 1. ✅ otto-protocol (otto-systems)
 2. ✅ otto-kernel (otto-systems)
 3. ✅ otto-command-service (otto-systems)
@@ -119,25 +136,34 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 15. ✅ otto-update-ui (otto-extensions)
 16. ✅ otto-osss (otto-systems)
 17. ✅ otto-crypto (otto-systems)
+18. ✅ otto-design-system-dev-ui (otto-extensions)
+19. ✅ otto-display-control-system (user-owned repo mapping)
+20. ✅ otto-module-template (otto-extensions)
+21. ✅ otto-sample-module (otto-extensions)
+22. ✅ otto-data-extension (otto-extensions)
 
-**Outstanding:** 
-- otto-design-system-dev-ui (not found, display-specific?)
-- otto-data-extension (not found, display-specific?)
+**Outstanding:**
+
+- otto-display-control-system canonical ownership decision (currently mapped to user-owned repo)
 
 **Impact:** ~450 MB removed from package size  
 
 ### ✅ Adapter Removal
+
 **Status:** COMPLETE  
 **Removed:**
+
 - `apps/display-runtime/src/lib/crypto-adapter.mjs` (DRY violation)
 - `apps/display-runtime/src/lib/osss-adapter.mjs` (DRY violation)
 
 **Rationale:** Node.js implementations of security-critical components are:
+
 - Less secure (no key zeroization, plaintext fallback)
 - Incomplete (missing operations like signing)
 - Duplicating Rust implementations that should NOT be reimplemented
 
-**Updated:** 
+**Updated:**
+
 - `external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs` (reverted to plaintext with TODO markers)
 
 ---
@@ -149,6 +175,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Eliminate 7 update scripts, use otto-update instead
 
 **Tasks:**
+
 1. Understand command-service update command contracts and integration points
    - Audit update commands registered in command-service
    - Confirm generated CLI/API surfaces from cli-extension and api-extension
@@ -157,49 +184,50 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 2-3 days
 
 **Kickoff Baseline (2026-09-02):**
-- Registered update-related command IDs identified in command-service:
-   - `config.show`, `config.set`
-   - `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
-- Registry upgrade completed with additional update orchestration IDs:
-   - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
-   - `update.approve`, `update.defer`, `update.progress`, `update.history`
-   - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
-- Generated surfaces verified at:
-   - `external/otto/otto-update/src/generated_cli/index.ts`
-   - `external/otto/otto-update/src/generated_api/index.ts`
-- Local command runner path verified:
-   - `tools/run-otto-command.mjs` -> `apps/runtime-shared/src/command-executor.mjs` -> command-service schema routing
-- Upstream upgrades published:
-   - `external/otto/otto-command-service` commit `4044f0f`
-   - `external/otto/otto-update` commit `9351122`
 
-2. Create update integration layer
+- Registered update-related command IDs identified in command-service:
+  - `config.show`, `config.set`
+  - `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
+- Registry upgrade completed with additional update orchestration IDs:
+  - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
+  - `update.approve`, `update.defer`, `update.progress`, `update.history`
+  - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
+- Generated surfaces verified at:
+  - `external/otto/otto-update/src/generated_cli/index.ts`
+  - `external/otto/otto-update/src/generated_api/index.ts`
+- Local command runner path verified:
+  - `tools/run-otto-command.mjs` -> `apps/runtime-shared/src/command-executor.mjs` -> command-service schema routing
+- Upstream upgrades published:
+  - `external/otto/otto-command-service` commit `4044f0f`
+  - `external/otto/otto-update` commit `9351122`
+
+1. Create update integration layer
    - Wrapper functions for otto-update commands
    - Version comparison using otto-update logic
    - Rollback safety checks
    - Estimated: 3-4 days
 
-3. Remove PowerShell update scripts
+2. Remove PowerShell update scripts
    - Delete: tools/build-update-package.ps1
    - Delete: tools/install-update.ps1
    - Delete: tools/register-auto-update.ps1
    - Verify: No remaining references
    - Estimated: 1-2 days
 
-4. Remove Bash update scripts
+3. Remove Bash update scripts
    - Delete: tools/pi/auto-update.sh
    - Update: Pi deployment workflows
    - Verify: Auto-update mechanism via systemd timer
    - Estimated: 2-3 days
 
-5. Refactor install/rollback scripts
+4. Refactor install/rollback scripts
    - Delete: update/hosted/install-display-system.sh
    - Delete: update/hosted/rollback-display-system.sh (both copies)
    - Create: Minimal install wrapper using otto-update
    - Update: Deployment documentation
    - Estimated: 3-4 days
 
-6. Test and validation
+5. Test and validation
    - Unit test otto-update integration
    - Pi deployment test with new mechanism
    - Rollback scenario test
@@ -207,21 +235,25 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 4-5 days
 
 **Deliverables:**
+
 - Removed 7 update-related scripts
 - command-service-driven update integration layer in place
 - Updated deployment documentation
 - Passing tests on Pi
 
 **Current Progress:**
+
 - Command parity gap for manifest/check/approve/defer/progress/history/rollback/backups/config has been closed through new registry commands.
 - Script migration expanded: `tools/pi/auto-update.sh`, `tools/register-auto-update.ps1`, and `tools/install-update.ps1` now call command-service update commands.
 - Hosted script migration expanded: embedded updater payload in `update/hosted/install-display-system.sh` and rollback flow in `update/hosted/rollback-display-system.sh` now delegate through command-service first.
 
-**Blockers:** 
+**Blockers:**
+
 - Need parity verification between command-service registry and generated CLI/API surfaces on deployment targets
 - Need standardized scheduling strategy (cron/systemd timer) that triggers registry commands without local update logic
 
 **Exit Criteria:**
+
 - All update functionality works via command-service update commands backed by otto-update
 - No remaining custom update logic
 - Tests pass on Raspberry Pi
@@ -233,6 +265,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Replace plaintext state storage with encrypted vault
 
 **Tasks:**
+
 1. Research otto-osss FFI/bindings availability
    - Check otto-osss Rust repo for Node.js bindings
    - Determine FFI bridge strategy
@@ -267,17 +300,20 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 2-3 days
 
 **Deliverables:**
+
 - OAuth tokens encrypted in vault
 - Audit trail for state access
 - Migration guide from plaintext
 - Test coverage for state storage
 
 **Blockers:**
+
 - Otto-osss FFI/Node.js bindings status unknown
 - May require waiting for otto-systems to deliver bindings
 - Key management infrastructure needed
 
 **Exit Criteria:**
+
 - All state stored in encrypted vault
 - No plaintext token files in mempalace
 - Audit trail functional
@@ -290,6 +326,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Use Rust crypto implementation instead of JS adapter
 
 **Tasks:**
+
 1. Research otto-crypto FFI/bindings availability
    - Check otto-crypto Rust repo for Node.js bindings
    - Determine FFI bridge strategy
@@ -317,16 +354,19 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 2-3 days
 
 **Deliverables:**
+
 - Crypto operations use Rust implementation
 - Proper key zeroization
 - Support for signing/verification
 - Test coverage for crypto
 
 **Blockers:**
+
 - Otto-crypto FFI/Node.js bindings status unknown
 - May require waiting for otto-systems to deliver bindings
 
 **Exit Criteria:**
+
 - All crypto via otto-crypto
 - Keys properly zeroized
 - No JS crypto implementation remaining
@@ -339,6 +379,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Coordinate process lifecycle with otto-kernel
 
 **Tasks:**
+
 1. Research otto-kernel integration patterns
    - Module lifecycle callbacks
    - Graceful shutdown mechanism
@@ -365,6 +406,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 2-3 days
 
 **Deliverables:**
+
 - Process lifecycle coordinated with kernel
 - Graceful shutdown working
 - Systemd unit updated
@@ -372,6 +414,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Blockers:** None anticipated
 
 **Exit Criteria:**
+
 - Process integrates with otto-kernel
 - Graceful shutdown works
 - Tests pass
@@ -383,6 +426,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Comprehensive validation on target hardware
 
 **Tasks:**
+
 1. Integration testing
    - All components working together
    - State persistence with encryption
@@ -405,6 +449,7 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Estimated: 1-2 days
 
 **Deliverables:**
+
 - All tests passing
 - Deployment documentation updated
 - Security checklist completed
@@ -415,17 +460,20 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 
 These are display-specific modules that could become reusable extensions:
 
-**otto-schedule-resolver-extension**
+### otto-schedule-resolver-extension
+
 - Source: `modules/display-schedule`
 - Resolve phase schedules from master calendars
 - Create separate repo in otto-extensions
 
-**otto-assignments-normalizer-extension**
+### otto-assignments-normalizer-extension
+
 - Source: `modules/display-assignments`
 - Normalize FACTS CSV into canonical format
 - Create separate repo in otto-extensions
 
-**otto-api-gateway-factory-extension**
+### otto-api-gateway-factory-extension
+
 - Source: `modules/display-api-interface`
 - Factory for multi-provider API gateways
 - Create separate repo in otto-extensions
@@ -437,17 +485,20 @@ These are display-specific modules that could become reusable extensions:
 ## 🔄 Dependencies & Sequencing
 
 **Hard Dependencies:**
+
 - Phase 1 → Phase 2/2b (update removal before state/crypto migration)
 - Phase 2/2b can run in parallel
 - Phase 3 can run after Phase 1
 - Phase 4 after all phases
 
 **Research Blockers:**
+
 - otto-crypto FFI/Node.js bindings (blocks Phase 2b)
 - otto-osss FFI/Node.js bindings (blocks Phase 2)
 - command-service update contract parity validation (blocks Phase 1)
 
 **Recommendation:** While waiting for FFI bindings:
+
 1. Complete Phase 1 (update script removal)
 2. Complete Phase 3 (kernel integration)
 3. Then Phase 2/2b when bindings available
@@ -457,7 +508,7 @@ These are display-specific modules that could become reusable extensions:
 ## 📊 Effort Breakdown
 
 | Phase | Description | Effort | Timeline | Status |
-|-------|-------------|--------|----------|--------|
+| ------- | ------------- | -------- | ---------- | -------- |
 | 0 | Structural audit & submodules | 7 days | ✅ Complete | ✅ |
 | 1 | Remove otto-update duplicates | 18-22 days | Week 1-2 | In progress (registry commands added, script migration started) |
 | 2 | Integrate otto-osss vault | 12-15 days | Week 3-4 | Blocked on FFI |
@@ -472,6 +523,7 @@ These are display-specific modules that could become reusable extensions:
 ## 🎲 Risk Assessment
 
 ### High Risk Items
+
 1. **otto-crypto FFI bindings unavailable**
    - Impact: Cannot implement secure crypto
    - Mitigation: Start Phase 1 & 3, revisit after otto-systems delivers bindings
@@ -488,6 +540,7 @@ These are display-specific modules that could become reusable extensions:
    - Timeline: Investigate in Phase 1
 
 ### Medium Risk Items
+
 1. **Pi deployment complexity**
    - Impact: Integration testing may take longer
    - Mitigation: Early Pi testing in Phase 1
@@ -503,6 +556,7 @@ These are display-specific modules that could become reusable extensions:
 ## 📝 Success Criteria
 
 **Functional Success:**
+
 - ✅ All 4 DRY violations eliminated
 - ✅ Zero custom crypto code
 - ✅ Zero plaintext credential storage
@@ -510,6 +564,7 @@ These are display-specific modules that could become reusable extensions:
 - ✅ Process lifecycle via otto-kernel
 
 **Security Success:**
+
 - ✅ OAuth tokens encrypted in vault
 - ✅ Audit trail for state access
 - ✅ No plaintext secrets on disk
@@ -517,6 +572,7 @@ These are display-specific modules that could become reusable extensions:
 - ✅ Security review passed
 
 **Quality Success:**
+
 - ✅ 95%+ test coverage
 - ✅ All tests passing on Pi
 - ✅ Deployment cycle verified
@@ -528,17 +584,20 @@ These are display-specific modules that could become reusable extensions:
 ## 📞 Key References
 
 **Audit Documentation:**
+
 - `/memories/repo/functional-dry-audit-critical.md` - Critical findings
 - `DRY_AUDIT_REPORT.md` - Detailed audit (generated)
 - `FUNCTIONAL_DRY_AUDIT.md` - Full audit (generated)
 
 **otto-systems Repos (Submodule Locations):**
+
 - `external/otto/otto-update` - Update engine
 - `external/otto/otto-osss` - State storage vault
 - `external/otto/otto-crypto` - Cryptographic operations
 - `external/otto/otto-kernel` - Process lifecycle
 
 **Deployment Documentation:**
+
 - `docs/raspberry-pi-deployment-checklist.md`
 - `docs/installer-smoke-test.md`
 - `docs/raspberry-pi-live-test.md`
