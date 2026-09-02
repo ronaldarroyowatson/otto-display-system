@@ -2,37 +2,16 @@
  * Calendar Runtime Bridge
  * Provides runtime-safe calendar operations for command-service handlers.
  * Stores credentials and tokens locally only (not committed to repos).
- * Uses OSSS for versioned state management and otto-crypto for encryption.
  *
- * Note: Uses display-runtime adapters for OSSS and crypto (Node.js implementations).
- * Those adapters follow contracts from external/otto/otto-osss and external/otto/otto-crypto.
+ * SECURITY NOTE: Currently stores OAuth tokens in plaintext.
+ * TODO: Integrate with otto-osss (Rust) for encrypted state storage via FFI.
+ * TODO: Integrate with otto-crypto (Rust) for sensitive data encryption via FFI.
+ * See: external/otto/otto-osss, external/otto/otto-crypto
  */
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-// Optional: Import OSSS adapter from display-runtime
-// Fallback to basic file I/O if not available
-let StateManager;
-try {
-  const displayRuntimeLib = await import("../../../../../../apps/display-runtime/src/lib/osss-adapter.mjs");
-  StateManager = displayRuntimeLib.StateManager;
-} catch (err) {
-  // OSSS adapter not available; use fallback
-  StateManager = null;
-}
-
-// Optional: Import crypto adapter from display-runtime
-// Fallback to plaintext if not available
-let CryptoAdapter;
-try {
-  const displayRuntimeCrypto = await import("../../../../../../apps/display-runtime/src/lib/crypto-adapter.mjs");
-  CryptoAdapter = displayRuntimeCrypto.CryptoAdapter;
-} catch (err) {
-  // Crypto adapter not available; use fallback
-  CryptoAdapter = null;
-}
 
 const EXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROVIDER_CONFIG_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider-config.json");
@@ -277,18 +256,9 @@ async function setProviderConfig(providerId, clientId, clientSecret, encryptionK
   const store = await loadProviderStore();
   const provider = store[providerId];
   
-  // Optionally encrypt clientSecret if crypto is available and key provided
-  let secretToStore = clientSecret.trim();
-  if (CryptoAdapter && encryptionKey) {
-    try {
-      const encrypted = CryptoAdapter.encrypt(secretToStore, encryptionKey);
-      secretToStore = JSON.stringify(encrypted);
-      provider.__encrypted = true;
-    } catch (err) {
-      // Fallback to plaintext if encryption fails
-      console.warn(`Failed to encrypt clientSecret: ${err.message}`);
-    }
-  }
+  // TODO: Encrypt clientSecret using otto-crypto (Rust) via FFI
+  // For now, store as plaintext (INSECURE - will be fixed when otto-crypto integration available)
+  const secretToStore = clientSecret.trim();
   
   provider.clientId = clientId.trim();
   provider.clientSecret = secretToStore;
@@ -335,16 +305,9 @@ async function authenticateProvider(providerId, authorizationCode, redirectUri, 
       throw new Error("Command executor not available");
     }
 
-    // Decrypt clientSecret if encrypted
+    // TODO: Decrypt clientSecret using otto-crypto (Rust) via FFI
+    // For now, clientSecret is plaintext (INSECURE - will be fixed when otto-crypto integration available)
     let clientSecret = provider.clientSecret;
-    if (provider.__encrypted && CryptoAdapter && encryptionKey) {
-      try {
-        const encrypted = JSON.parse(clientSecret);
-        clientSecret = CryptoAdapter.decrypt(encrypted, encryptionKey);
-      } catch (err) {
-        throw new Error(`Failed to decrypt clientSecret: ${err.message}`);
-      }
-    }
 
     const tokenResult = await executeCommand("oauth.exchange.token", {
       providerId,
