@@ -64,3 +64,6 @@
 [submodule "external/otto/otto-data-extension"]
 	path = external/otto/otto-data-extension
 	url = https://github.com/otto-extensions/otto-data-extension.git
+[submodule "external/otto/otto-schedule-resolver-extension"]
+	path = external/otto/otto-schedule-resolver-extension
+	url = https://github.com/otto-extensions/otto-schedule-resolver-extension.git
