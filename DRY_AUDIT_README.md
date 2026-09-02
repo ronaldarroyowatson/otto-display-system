@@ -73,6 +73,13 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 Kickoff completed:
 - Confirmed command IDs: `config.show`, `config.set`, `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
 - Confirmed generated surfaces in `external/otto/otto-update/src/generated_cli/index.ts` and `external/otto/otto-update/src/generated_api/index.ts`
+- Added and pushed update orchestration commands in command-service:
+   - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
+   - `update.approve`, `update.defer`, `update.progress`, `update.history`
+   - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
+- Started script migration to command-service update flow:
+   - `tools/pi/auto-update.sh`
+   - `tools/register-auto-update.ps1`
 
 ---
 

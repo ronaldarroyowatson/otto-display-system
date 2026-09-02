@@ -160,11 +160,18 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 - Registered update-related command IDs identified in command-service:
    - `config.show`, `config.set`
    - `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
+- Registry upgrade completed with additional update orchestration IDs:
+   - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
+   - `update.approve`, `update.defer`, `update.progress`, `update.history`
+   - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
 - Generated surfaces verified at:
    - `external/otto/otto-update/src/generated_cli/index.ts`
    - `external/otto/otto-update/src/generated_api/index.ts`
 - Local command runner path verified:
    - `tools/run-otto-command.mjs` -> `apps/runtime-shared/src/command-executor.mjs` -> command-service schema routing
+- Upstream upgrades published:
+   - `external/otto/otto-command-service` commit `4044f0f`
+   - `external/otto/otto-update` commit `9351122`
 
 2. Create update integration layer
    - Wrapper functions for otto-update commands
@@ -205,9 +212,13 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 - Updated deployment documentation
 - Passing tests on Pi
 
+**Current Progress:**
+- Command parity gap for manifest/check/approve/defer/progress/history/rollback/backups/config has been closed through new registry commands.
+- Script migration started: `tools/pi/auto-update.sh` and `tools/register-auto-update.ps1` now call command-service update commands.
+
 **Blockers:** 
-- Need validated command IDs/payload contracts for update flows
-- Need parity verification between command-service registry and generated CLI/API surfaces
+- Need parity verification between command-service registry and generated CLI/API surfaces on deployment targets
+- Need standardized scheduling strategy (cron/systemd timer) that triggers registry commands without local update logic
 
 **Exit Criteria:**
 - All update functionality works via command-service update commands backed by otto-update
@@ -447,7 +458,7 @@ These are display-specific modules that could become reusable extensions:
 | Phase | Description | Effort | Timeline | Status |
 |-------|-------------|--------|----------|--------|
 | 0 | Structural audit & submodules | 7 days | ✅ Complete | ✅ |
-| 1 | Remove otto-update duplicates | 18-22 days | Week 1-2 | In progress (research active) |
+| 1 | Remove otto-update duplicates | 18-22 days | Week 1-2 | In progress (registry commands added, script migration started) |
 | 2 | Integrate otto-osss vault | 12-15 days | Week 3-4 | Blocked on FFI |
 | 2b | Integrate otto-crypto | 10-12 days | Week 2-3 | Blocked on FFI |
 | 3 | Integrate otto-kernel | 6-8 days | Week 4-5 | Ready |

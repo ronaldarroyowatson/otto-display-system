@@ -173,6 +173,18 @@ This handoff document maintains continuous progress tracking across the 6-week D
    - `external/otto/otto-update/docs/command-service-extraction-report.md`
    - `external/otto/otto-update/docs/command-service-validation.md`
 
+**Phase 1.0 Delta (2026-09-02):**
+- Added and pushed new command-service update orchestration commands:
+   - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
+   - `update.approve`, `update.defer`, `update.progress`, `update.history`
+   - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
+- Regenerated and pushed otto-update command surfaces from registry source:
+   - `external/otto/otto-update/src/generated_api/index.ts`
+   - `external/otto/otto-update/src/generated_cli/index.ts`
+- Upstream commits pushed:
+   - `otto-command-service`: `4044f0f`
+   - `otto-update`: `9351122`
+
 **Script Replacement Matrix (initial):**
 - `tools/install-update.ps1` -> keep `file.check.space` and `file.rotate.logs` calls; replace package install/apply flow with command-service update orchestration.
 - `tools/register-auto-update.ps1` -> replace direct script generation with command-service-driven scheduling/trigger approach.
@@ -185,15 +197,15 @@ This handoff document maintains continuous progress tracking across the 6-week D
 - [x] Service lifecycle commands present in registry (`service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`).
 - [x] Config commands present in registry (`config.show`, `config.set`).
 - [x] Generated CLI and API command surfaces contain the same command set.
-- [ ] Manifest resolution/version compare command identified and mapped.
-- [ ] Download/apply package command identified and mapped.
-- [ ] Rollback command identified and mapped.
+- [x] Manifest resolution/version compare command identified and mapped (`update.manifest`, `update.policy`, `update.check`).
+- [x] Download/apply package command identified and mapped (`update.check`, `update.approve`, `update.progress`).
+- [x] Rollback command identified and mapped (`update.rollback`, `update.backups`).
 - [ ] Scheduling command path identified for periodic update checks.
 
 **Current Gap Summary:**
-- Present now: service/config command coverage.
-- Missing or not yet mapped: end-to-end update orchestration commands for manifest evaluation, payload apply, and rollback flow.
-- Action required: add or locate command-service schemas for update orchestration before deleting script logic that currently implements those steps.
+- Present now: registry coverage for service/config plus full update orchestration command set.
+- Remaining gap: scheduling policy path for periodic checks across deployment targets.
+- Action required: standardize scheduler trigger integration (cron/systemd timer) to call `update.check` (+ optional `update.approve`) without reintroducing local update logic.
 
 ---
 
@@ -207,6 +219,10 @@ This handoff document maintains continuous progress tracking across the 6-week D
 - Remove 7 update-related scripts
 - Update deployment workflows
 - Test on Raspberry Pi
+
+**In Progress:**
+- Refactored `tools/pi/auto-update.sh` to call command-service update commands (removed local manifest/download/unzip logic).
+- Refactored `tools/register-auto-update.ps1` to emit a command-service-driven updater (`update.check` and optional `update.approve`).
 
 **Success Criteria:**
 - [ ] All 7 scripts removed
@@ -349,8 +365,8 @@ This handoff document maintains continuous progress tracking across the 6-week D
 | 0.3 Phase 2 Submodules | ✅ | 2 hours | 2 hours | 10/12 repos |
 | 0.4 Functional Audit | ✅ | 3 hours | 3 hours | 4 violations found |
 | 0.5 Adapter Removal | ✅ | 1 hour | 1 hour | DRY fix |
-| 1.0 Research Planning | → | 2-3 days | In progress | Command contracts mapped |
-| 1.1 Phase 1 Impl | ⏳ | 18-22 days | Not started | Week 1-2 |
+| 1.0 Research Planning | ✅ | 2-3 days | Complete | Command contracts + update orchestration mapped |
+| 1.1 Phase 1 Impl | → | 18-22 days | In progress | First script refactors landed |
 | 2.0 Phase 2 Impl | ⏳ | 22-27 days | Not started | Week 3-4 |
 | 3.0 Phase 3 Impl | ⏳ | 6-8 days | Not started | Week 4-5 |
 | 4.0 Testing & Val | ⏳ | 5-7 days | Not started | Week 6 |
@@ -446,6 +462,21 @@ This handoff document maintains continuous progress tracking across the 6-week D
 
 **Next Action:**
 - Build command parity checklist and begin replacing update script execution paths.
+
+---
+
+### 2026-09-02 - Phase 1.1 Started (Registry-Driven Update Commands)
+**Created by:** DRY Remediation Session  
+**Status:** ACTIVE - Phase 1.1 implementation in progress
+
+**Summary:**
+- ✅ Added missing update orchestration commands in command-service and pushed upstream.
+- ✅ Regenerated otto-update CLI/API surfaces from command-service source of truth and pushed upstream.
+- ✅ Began script replacement in monorepo using command-service update commands.
+- ⚠️ Command-service test runner still reports one existing suite configuration issue (`tests/auth-schemas.test.mjs` uses node:test under vitest run); not introduced by this change.
+
+**Next Action:**
+- Commit monorepo submodule pointer updates and continue replacing remaining update scripts.
 
 ---
 
