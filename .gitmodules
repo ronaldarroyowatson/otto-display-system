@@ -49,3 +49,18 @@
 [submodule "external/otto/otto-update-ui"]
 	path = external/otto/otto-update-ui
 	url = https://github.com/otto-systems/otto-update-ui.git
+[submodule "external/otto/otto-design-system-dev-ui"]
+	path = external/otto/otto-design-system-dev-ui
+	url = https://github.com/otto-extensions/otto-design-system-dev-ui.git
+[submodule "external/otto/otto-display-control-system"]
+	path = external/otto/otto-display-control-system
+	url = https://github.com/ronaldarroyowatson/otto-display-control-system.git
+[submodule "external/otto/otto-module-template"]
+	path = external/otto/otto-module-template
+	url = https://github.com/otto-extensions/otto-module-template.git
+[submodule "external/otto/otto-sample-module"]
+	path = external/otto/otto-sample-module
+	url = https://github.com/otto-extensions/otto-sample-module.git
+[submodule "external/otto/otto-data-extension"]
+	path = external/otto/otto-data-extension
+	url = https://github.com/otto-extensions/otto-data-extension.git
