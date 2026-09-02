@@ -140,8 +140,9 @@ This handoff document maintains continuous progress tracking across the 6-week D
 **Objective:** Gather information needed for Phase 1 implementation
 
 **Tasks:**
-1. Research otto-update CLI interface
-   - Command-line API structure
+1. Research command-service update command contracts
+   - Registered update command IDs and payload schemas
+   - Generated CLI/API behavior through cli-extension and api-extension
    - Version format and manifest structure
    - Channel and deferral mechanisms
    - Rollback state machine
@@ -157,7 +158,7 @@ This handoff document maintains continuous progress tracking across the 6-week D
    - Design: Key management infrastructure for encryption
 
 **Success Criteria:**
-- [ ] otto-update CLI documented
+- [ ] command-service update command contracts documented
 - [ ] FFI/bindings availability determined for crypto and osss
 - [ ] Integration designs documented and reviewed
 - [ ] Phase 1 can proceed confidently
@@ -276,18 +277,19 @@ This handoff document maintains continuous progress tracking across the 6-week D
 
 ---
 
-### Blocker 3: otto-update CLI Documentation (HIGH)
-**Impact:** Cannot implement Phase 1 without understanding CLI  
-**Status:** Unknown - need to research  
+### Blocker 3: Command-Service Update Contract Parity (HIGH)
+**Impact:** Cannot implement Phase 1 safely without validating registry contracts and generated surfaces  
+**Status:** In progress - architecture clarified by team  
 **Investigation Needed:**
-- [ ] Check otto-update Rust repo for CLI interface
-- [ ] Document command structure and arguments
+- [ ] Check command-service registry entries for update command IDs
+- [ ] Validate generated CLI and API surfaces from cli-extension and api-extension
+- [ ] Document command structure and payloads
 - [ ] Understand version comparison logic
 - [ ] Understand deferral and rollback mechanisms
 
 **Mitigation:**
-- Reach out to otto-systems team for documentation
-- Review otto-update source code directly if docs missing
+- Use command-service registry as source of truth
+- Verify otto-update behavior through registered command execution paths
 
 ---
 

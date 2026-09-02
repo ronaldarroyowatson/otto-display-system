@@ -149,8 +149,9 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 **Objective:** Eliminate 7 update scripts, use otto-update instead
 
 **Tasks:**
-1. Understand otto-update CLI interface and integration points
-   - Research otto-update command-line API
+1. Understand command-service update command contracts and integration points
+   - Audit update commands registered in command-service
+   - Confirm generated CLI/API surfaces from cli-extension and api-extension
    - Document version format, manifest structure
    - Identify deferral, channel, and rollback mechanisms
    - Estimated: 2-3 days
@@ -190,16 +191,16 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 
 **Deliverables:**
 - Removed 7 update-related scripts
-- otto-update integration layer in place
+- command-service-driven update integration layer in place
 - Updated deployment documentation
 - Passing tests on Pi
 
 **Blockers:** 
-- Need access to otto-update CLI documentation
-- May need otto-update CLI bindings for Node.js integration
+- Need validated command IDs/payload contracts for update flows
+- Need parity verification between command-service registry and generated CLI/API surfaces
 
 **Exit Criteria:**
-- All update functionality works via otto-update
+- All update functionality works via command-service update commands backed by otto-update
 - No remaining custom update logic
 - Tests pass on Raspberry Pi
 
@@ -422,7 +423,7 @@ These are display-specific modules that could become reusable extensions:
 **Research Blockers:**
 - otto-crypto FFI/Node.js bindings (blocks Phase 2b)
 - otto-osss FFI/Node.js bindings (blocks Phase 2)
-- otto-update CLI documentation (blocks Phase 1)
+- command-service update contract parity validation (blocks Phase 1)
 
 **Recommendation:** While waiting for FFI bindings:
 1. Complete Phase 1 (update script removal)
@@ -459,9 +460,9 @@ These are display-specific modules that could become reusable extensions:
    - Mitigation: Start Phase 1 & 3, revisit after otto-systems delivers bindings
    - Timeline: Determine status immediately
 
-3. **otto-update CLI interface incompatible**
-   - Impact: Cannot remove custom update logic
-   - Mitigation: Enhance otto-update if needed
+3. **Command-service update contract parity mismatch**
+   - Impact: Generated CLI/API behavior may drift from registry-backed command contracts
+   - Mitigation: Treat command-service registry as source of truth and validate generated surfaces
    - Timeline: Investigate in Phase 1
 
 ### Medium Risk Items

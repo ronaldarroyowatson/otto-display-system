@@ -66,7 +66,7 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 - Created roadmap and handoff docs
 
 ### → Next (Phase 1)
-- Research otto-update CLI interface
+- Research command-service update command contracts and generated CLI/API surfaces
 - Remove 7 update-related scripts
 - Timeline: Week 1-2 (18-22 days)
 
@@ -138,10 +138,10 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
    - Blocks: Phase 2 (state vault)
    - Action: Check otto-osss GitHub repo
 
-3. **otto-update CLI documentation**
-   - Status: Unknown if documented
-   - Blocks: Phase 1 (update removal)
-   - Action: Check otto-update GitHub repo + reach out to team
+3. **Command-service update contract parity**
+   - Status: Architecture clarified: registry is source of truth
+   - Blocks: Phase 1 only if command parity is unverified
+   - Action: Validate command-service registry contracts and generated CLI/API surfaces
 
 ---
 
