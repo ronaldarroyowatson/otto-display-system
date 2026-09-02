@@ -134,7 +134,7 @@ This handoff document maintains continuous progress tracking across the 6-week D
 
 ## 🚀 Upcoming Milestones
 
-### Milestone 1.0: Phase 1 Research & Planning (NEXT)
+### Milestone 1.0: Phase 1 Research & Planning (ACTIVE)
 **Estimated Start:** 2026-09-02 (after team review)  
 **Estimated Duration:** 2-3 days  
 **Objective:** Gather information needed for Phase 1 implementation
@@ -158,10 +158,28 @@ This handoff document maintains continuous progress tracking across the 6-week D
    - Design: Key management infrastructure for encryption
 
 **Success Criteria:**
-- [ ] command-service update command contracts documented
+- [x] command-service update command contracts documented (service/config command set)
 - [ ] FFI/bindings availability determined for crypto and osss
 - [ ] Integration designs documented and reviewed
 - [ ] Phase 1 can proceed confidently
+
+**Kickoff Findings (2026-09-02):**
+- Source of truth confirmed in command-service schemas:
+   - `config.show`, `config.set`
+   - `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
+- Generated surfaces confirmed in `external/otto/otto-update/src/generated_cli/index.ts` and `external/otto/otto-update/src/generated_api/index.ts`.
+- Runtime command path confirmed via `tools/run-otto-command.mjs` -> `apps/runtime-shared/src/command-executor.mjs` -> command-service schema routing.
+- Architecture evidence captured in:
+   - `external/otto/otto-update/docs/command-service-extraction-report.md`
+   - `external/otto/otto-update/docs/command-service-validation.md`
+
+**Script Replacement Matrix (initial):**
+- `tools/install-update.ps1` -> keep `file.check.space` and `file.rotate.logs` calls; replace package install/apply flow with command-service update orchestration.
+- `tools/register-auto-update.ps1` -> replace direct script generation with command-service-driven scheduling/trigger approach.
+- `tools/pi/auto-update.sh` -> replace manifest version check + unzip + restart with registry-backed update command flow.
+- `update/hosted/install-display-system.sh` -> remove embedded auto-update loop and service-level update logic; delegate to command-service + otto-update command path.
+- `update/hosted/rollback-display-system.sh` -> replace manual archive retrieval/unzip with command-service rollback/update command path.
+- `tools/build-update-package.ps1` -> split into packaging-only concern vs update apply concern; update apply logic must move to command-service flow.
 
 ---
 
@@ -171,7 +189,7 @@ This handoff document maintains continuous progress tracking across the 6-week D
 **Objective:** Eliminate all custom update scripts, use otto-update instead
 
 **Key Work:**
-- Create otto-update integration layer in Node.js
+- Create command-service-driven update integration layer in Node.js
 - Remove 7 update-related scripts
 - Update deployment workflows
 - Test on Raspberry Pi
@@ -317,12 +335,12 @@ This handoff document maintains continuous progress tracking across the 6-week D
 | 0.3 Phase 2 Submodules | ✅ | 2 hours | 2 hours | 10/12 repos |
 | 0.4 Functional Audit | ✅ | 3 hours | 3 hours | 4 violations found |
 | 0.5 Adapter Removal | ✅ | 1 hour | 1 hour | DRY fix |
-| 1.0 Research Planning | → | 2-3 days | Pending | NEXT |
+| 1.0 Research Planning | → | 2-3 days | In progress | Command contracts mapped |
 | 1.1 Phase 1 Impl | ⏳ | 18-22 days | Not started | Week 1-2 |
 | 2.0 Phase 2 Impl | ⏳ | 22-27 days | Not started | Week 3-4 |
 | 3.0 Phase 3 Impl | ⏳ | 6-8 days | Not started | Week 4-5 |
 | 4.0 Testing & Val | ⏳ | 5-7 days | Not started | Week 6 |
-| **Total** | | **40-48 days** | **8 days** | **82% remaining** |
+| **Total** | | **40-48 days** | **8+ days** | **Phase 1 research active** |
 
 ---
 
@@ -397,6 +415,25 @@ This handoff document maintains continuous progress tracking across the 6-week D
 ---
 
 ## 📝 Update Log
+
+### 2026-09-02 - Phase 1.0 Kickoff (Command Contracts)
+**Created by:** DRY Remediation Session  
+**Status:** ACTIVE - Phase 1.0 research in progress
+
+**Summary:**
+- ✅ Confirmed command-service registry is the only source of truth for update command surfaces.
+- ✅ Mapped current generated update command set (config/service commands) and payload contracts.
+- ✅ Verified runtime command execution path used in workspace command runner.
+- ✅ Created initial script replacement matrix for the 6 duplicate update scripts.
+- → Next: define exact command parity checklist and implement first script replacements.
+
+**Current Blocker:**
+- Need explicit mapping of each duplicate script step to a concrete command ID sequence for deploy/apply/rollback parity.
+
+**Next Action:**
+- Build command parity checklist and begin replacing update script execution paths.
+
+---
 
 ### 2026-09-02 - Initial Handoff Document
 **Created by:** DRY Audit Session  

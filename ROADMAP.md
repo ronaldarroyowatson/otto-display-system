@@ -156,6 +156,16 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
    - Identify deferral, channel, and rollback mechanisms
    - Estimated: 2-3 days
 
+**Kickoff Baseline (2026-09-02):**
+- Registered update-related command IDs identified in command-service:
+   - `config.show`, `config.set`
+   - `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
+- Generated surfaces verified at:
+   - `external/otto/otto-update/src/generated_cli/index.ts`
+   - `external/otto/otto-update/src/generated_api/index.ts`
+- Local command runner path verified:
+   - `tools/run-otto-command.mjs` -> `apps/runtime-shared/src/command-executor.mjs` -> command-service schema routing
+
 2. Create update integration layer
    - Wrapper functions for otto-update commands
    - Version comparison using otto-update logic
@@ -437,7 +447,7 @@ These are display-specific modules that could become reusable extensions:
 | Phase | Description | Effort | Timeline | Status |
 |-------|-------------|--------|----------|--------|
 | 0 | Structural audit & submodules | 7 days | ✅ Complete | ✅ |
-| 1 | Remove otto-update duplicates | 18-22 days | Week 1-2 | → NEXT |
+| 1 | Remove otto-update duplicates | 18-22 days | Week 1-2 | In progress (research active) |
 | 2 | Integrate otto-osss vault | 12-15 days | Week 3-4 | Blocked on FFI |
 | 2b | Integrate otto-crypto | 10-12 days | Week 2-3 | Blocked on FFI |
 | 3 | Integrate otto-kernel | 6-8 days | Week 4-5 | Ready |

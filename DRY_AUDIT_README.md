@@ -55,8 +55,8 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 
 ## 🚀 Current Status
 
-**Phase:** 0 → 1 (Transition)  
-**Progress:** 8/48 days complete (17%)
+**Phase:** 1.0 active (command-contract mapping)  
+**Progress:** 8+ / 48 days complete
 
 ### ✅ Completed (Phase 0)
 - Structural audit (identified 21 submodule candidates)
@@ -69,6 +69,10 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 - Research command-service update command contracts and generated CLI/API surfaces
 - Remove 7 update-related scripts
 - Timeline: Week 1-2 (18-22 days)
+
+Kickoff completed:
+- Confirmed command IDs: `config.show`, `config.set`, `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
+- Confirmed generated surfaces in `external/otto/otto-update/src/generated_cli/index.ts` and `external/otto/otto-update/src/generated_api/index.ts`
 
 ---
 
