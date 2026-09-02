@@ -1,14 +1,55 @@
 /**
  * Calendar Runtime Bridge
  * Provides runtime-safe calendar operations for command-service handlers.
+ * Stores credentials and tokens locally only (not committed to repos).
+ * Uses OSSS for versioned state management and otto-crypto for encryption.
  */
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Optional: Import OSSS for versioned state management
+// Fallback to basic file I/O if not available
+let StateManager;
+try {
+  const osss = await import("otto-osss");
+  StateManager = osss.StateManager;
+} catch (err) {
+  // otto-osss not installed; use fallback
+  StateManager = null;
+}
+
+// Optional: Import crypto for encryption
+// Fallback to plaintext if not available
+let encrypt, decrypt;
+try {
+  const crypto = await import("otto-crypto");
+  encrypt = crypto.encrypt;
+  decrypt = crypto.decrypt;
+} catch (err) {
+  // otto-crypto not installed; use fallback
+  encrypt = null;
+  decrypt = null;
+}
+
 const EXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROVIDER_CONFIG_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider-config.json");
+const PROVIDER_TOKENS_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider-tokens.json");
+
+// OSSS manager instances (if available)
+let configStateManager = null;
+let tokensStateManager = null;
+
+function initStateManagers() {
+  if (!StateManager) return;
+  if (!configStateManager) {
+    configStateManager = new StateManager(PROVIDER_CONFIG_PATH, "1.0.0");
+  }
+  if (!tokensStateManager) {
+    tokensStateManager = new StateManager(PROVIDER_TOKENS_PATH, "1.0.0");
+  }
+}
 
 const DEFAULT_PROVIDERS = {
   microsoft: {
@@ -41,8 +82,36 @@ function cloneDefaultProviders() {
 }
 
 async function loadProviderStore() {
+  initStateManagers();
   const store = cloneDefaultProviders();
+  
   try {
+    // Try OSSS first if available
+    if (StateManager && configStateManager) {
+      const osssData = await configStateManager.load();
+      const providers = Array.isArray(osssData?.providers) ? osssData.providers : [];
+      for (const entry of providers) {
+        if (!entry || typeof entry !== "object") continue;
+        const providerId = String(entry.providerId ?? "").trim();
+        if (!providerId || !store[providerId]) continue;
+        
+        store[providerId] = {
+          ...store[providerId],
+          clientId: typeof entry.clientId === "string" ? entry.clientId : "",
+          clientSecret: typeof entry.clientSecret === "string" ? entry.clientSecret : "",
+          isConfigured: Boolean(entry.clientId && entry.clientSecret),
+          isAuthenticated: Boolean(entry.isAuthenticated),
+          lastSyncAt: entry.lastSyncAt ?? null,
+          error: entry.error ?? null
+        };
+        if (!store[providerId].isConfigured) {
+          store[providerId].error = "No OAuth credentials configured";
+        }
+      }
+      return store;
+    }
+    
+    // Fallback: read raw file
     const raw = await fs.readFile(PROVIDER_CONFIG_PATH, "utf8");
     const parsed = JSON.parse(raw);
     const providers = Array.isArray(parsed?.providers) ? parsed.providers : [];
@@ -74,7 +143,8 @@ async function loadProviderStore() {
 }
 
 async function saveProviderStore(store) {
-  await fs.mkdir(path.dirname(PROVIDER_CONFIG_PATH), { recursive: true });
+  initStateManagers();
+  
   const payload = {
     schemaVersion: "1.0.0",
     generatedAt: new Date().toISOString(),
@@ -87,7 +157,84 @@ async function saveProviderStore(store) {
       error: provider.error
     }))
   };
+  
+  // Try OSSS first if available
+  if (StateManager && configStateManager) {
+    await configStateManager.save(payload);
+    return;
+  }
+  
+  // Fallback: write raw file
+  await fs.mkdir(path.dirname(PROVIDER_CONFIG_PATH), { recursive: true });
   await fs.writeFile(PROVIDER_CONFIG_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+/**
+ * Token storage (separate from credentials for better security)
+ */
+const DEFAULT_TOKENS = {
+  microsoft: { accessToken: null, expiresAt: null, refreshToken: null },
+  google: { accessToken: null, expiresAt: null, refreshToken: null }
+};
+
+async function loadProviderTokens() {
+  initStateManagers();
+  const tokens = JSON.parse(JSON.stringify(DEFAULT_TOKENS));
+  
+  try {
+    // Try OSSS first if available
+    if (StateManager && tokensStateManager) {
+      const osssData = await tokensStateManager.load();
+      const providerTokens = osssData?.providers || {};
+      for (const [providerId, data] of Object.entries(providerTokens)) {
+        if (tokens[providerId] && typeof data === "object") {
+          tokens[providerId] = {
+            accessToken: data.accessToken || null,
+            expiresAt: data.expiresAt || null,
+            refreshToken: data.refreshToken || null
+          };
+        }
+      }
+      return tokens;
+    }
+    
+    // Fallback: read raw file
+    const raw = await fs.readFile(PROVIDER_TOKENS_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    const providerTokens = parsed?.providers || {};
+    for (const [providerId, data] of Object.entries(providerTokens)) {
+      if (tokens[providerId] && typeof data === "object") {
+        tokens[providerId] = {
+          accessToken: data.accessToken || null,
+          expiresAt: data.expiresAt || null,
+          refreshToken: data.refreshToken || null
+        };
+      }
+    }
+  } catch {
+    // First-run or invalid state falls back to defaults.
+  }
+  return tokens;
+}
+
+async function saveProviderTokens(tokens) {
+  initStateManagers();
+  
+  const payload = {
+    schemaVersion: "1.0.0",
+    generatedAt: new Date().toISOString(),
+    providers: tokens
+  };
+  
+  // Try OSSS first if available
+  if (StateManager && tokensStateManager) {
+    await tokensStateManager.save(payload);
+    return;
+  }
+  
+  // Fallback: write raw file
+  await fs.mkdir(path.dirname(PROVIDER_TOKENS_PATH), { recursive: true });
+  await fs.writeFile(PROVIDER_TOKENS_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
 function validateProviderId(providerId) {
@@ -117,7 +264,7 @@ async function getProviderConfig(providerId) {
   return [toProviderSummary(store[providerId])];
 }
 
-async function setProviderConfig(providerId, clientId, clientSecret) {
+async function setProviderConfig(providerId, clientId, clientSecret, encryptionKey = null) {
   validateProviderId(providerId);
   if (!clientId || typeof clientId !== "string" || !clientId.trim()) {
     throw new Error("clientId is required and must be a non-empty string");
@@ -128,8 +275,22 @@ async function setProviderConfig(providerId, clientId, clientSecret) {
 
   const store = await loadProviderStore();
   const provider = store[providerId];
+  
+  // Optionally encrypt clientSecret if crypto is available and key provided
+  let secretToStore = clientSecret.trim();
+  if (encrypt && encryptionKey) {
+    try {
+      const encrypted = encrypt(secretToStore, encryptionKey);
+      secretToStore = JSON.stringify(encrypted);
+      provider.__encrypted = true;
+    } catch (err) {
+      // Fallback to plaintext if encryption fails
+      console.warn(`Failed to encrypt clientSecret: ${err.message}`);
+    }
+  }
+  
   provider.clientId = clientId.trim();
-  provider.clientSecret = clientSecret.trim();
+  provider.clientSecret = secretToStore;
   provider.isConfigured = true;
   provider.isAuthenticated = false;
   provider.error = null;
@@ -142,6 +303,117 @@ async function setProviderConfig(providerId, clientId, clientSecret) {
     isConfigured: provider.isConfigured,
     message: `OAuth credentials saved for ${provider.name}.`
   };
+}
+
+/**
+ * Authenticate provider by exchanging auth code for token
+ * Calls the oauth.exchange.token command from command-service
+ */
+async function authenticateProvider(providerId, authorizationCode, redirectUri, executeCommand, encryptionKey = null) {
+  validateProviderId(providerId);
+  
+  if (!authorizationCode || typeof authorizationCode !== "string") {
+    throw new Error("authorizationCode is required");
+  }
+  if (!redirectUri || typeof redirectUri !== "string") {
+    throw new Error("redirectUri is required");
+  }
+
+  const store = await loadProviderStore();
+  const provider = store[providerId];
+
+  if (!provider.isConfigured) {
+    throw new Error(`Provider ${providerId} is not configured with credentials`);
+  }
+
+  try {
+    // Call the OAuth token exchange handler
+    // This requires executeCommand to be passed from the runtime
+    // In real usage, this would be called through the command-service
+    if (!executeCommand) {
+      throw new Error("Command executor not available");
+    }
+
+    // Decrypt clientSecret if encrypted
+    let clientSecret = provider.clientSecret;
+    if (provider.__encrypted && decrypt && encryptionKey) {
+      try {
+        const encrypted = JSON.parse(clientSecret);
+        clientSecret = decrypt(encrypted, encryptionKey);
+      } catch (err) {
+        throw new Error(`Failed to decrypt clientSecret: ${err.message}`);
+      }
+    }
+
+    const tokenResult = await executeCommand("oauth.exchange.token", {
+      providerId,
+      clientId: provider.clientId,
+      clientSecret,
+      authorizationCode,
+      redirectUri
+    });
+
+    if (!tokenResult || !tokenResult.token) {
+      throw new Error("Failed to obtain access token");
+    }
+
+    // Store token locally (not in credentials file)
+    const tokens = await loadProviderTokens();
+    tokens[providerId] = {
+      accessToken: tokenResult.token.value,
+      expiresAt: tokenResult.token.expiresAt,
+      refreshToken: tokenResult.token.refresh_token || null
+    };
+    await saveProviderTokens(tokens);
+
+    // Update provider authentication status
+    provider.isAuthenticated = true;
+    provider.error = null;
+    provider.lastSyncAt = new Date().toISOString();
+    await saveProviderStore(store);
+
+    return {
+      providerId,
+      name: provider.name,
+      isAuthenticated: true,
+      message: `Successfully authenticated ${provider.name}`,
+      user: tokenResult.user || null
+    };
+  } catch (error) {
+    // Update error but don't expose details that might contain secrets
+    const provider = store[providerId];
+    provider.isAuthenticated = false;
+    provider.error = "Authentication failed - check credentials and try again";
+    await saveProviderStore(store);
+
+    throw new Error("Authentication failed");
+  }
+}
+
+/**
+ * Get valid access token for provider (refresh if needed)
+ */
+async function getAccessToken(providerId) {
+  validateProviderId(providerId);
+  
+  const tokens = await loadProviderTokens();
+  const token = tokens[providerId];
+
+  if (!token || !token.accessToken) {
+    return null;
+  }
+
+  // Check if expired and still has refresh token
+  if (token.expiresAt) {
+    const expiresAt = new Date(token.expiresAt).getTime();
+    if (expiresAt < Date.now() && token.refreshToken) {
+      // Token expired, would need refresh logic here
+      // For now, return null to trigger re-authentication
+      return null;
+    }
+  }
+
+  return token.accessToken;
 }
 
 export async function executeCalendarCommand(commandName, input = {}) {

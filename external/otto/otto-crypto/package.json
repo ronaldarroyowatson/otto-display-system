@@ -1,0 +1,22 @@
+{
+  "name": "otto-crypto",
+  "version": "0.1.0",
+  "description": "Otto Crypto - encryption/decryption utilities for securing sensitive data at rest",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./aes": "./src/aes.ts",
+    "./key-manager": "./src/key-manager.ts"
+  },
+  "keywords": ["otto", "crypto", "encryption", "decryption", "keys", "security"],
+  "author": "Otto Systems",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/**/*.test.mjs",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

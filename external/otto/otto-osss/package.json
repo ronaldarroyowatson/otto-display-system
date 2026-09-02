@@ -1,0 +1,22 @@
+{
+  "name": "otto-osss",
+  "version": "0.1.0",
+  "description": "Otto Ordered State Storage System - secure state storage with versioned migrations for safe updates without data loss",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./state-manager": "./src/state-manager.ts",
+    "./migration": "./src/migration.ts"
+  },
+  "keywords": ["otto", "state", "storage", "migration", "versioning", "backup"],
+  "author": "Otto Systems",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/**/*.test.mjs",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
