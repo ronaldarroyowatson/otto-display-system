@@ -19,3 +19,33 @@
 [submodule "external/otto/otto-update"]
 	path = external/otto/otto-update
 	url = https://github.com/otto-systems/otto-update.git
+[submodule "external/otto/otto-api-extension"]
+	path = external/otto/otto-api-extension
+	url = https://github.com/otto-extensions/otto-api-extension.git
+[submodule "external/otto/otto-auth-extension"]
+	path = external/otto/otto-auth-extension
+	url = https://github.com/otto-extensions/otto-auth-extension.git
+[submodule "external/otto/otto-cli-extension"]
+	path = external/otto/otto-cli-extension
+	url = https://github.com/otto-extensions/otto-cli-extension.git
+[submodule "external/otto/otto-debug-extension"]
+	path = external/otto/otto-debug-extension
+	url = https://github.com/otto-extensions/otto-debug-extension.git
+[submodule "external/otto/otto-design-system"]
+	path = external/otto/otto-design-system
+	url = https://github.com/otto-extensions/otto-design-system.git
+[submodule "external/otto/otto-file-extension"]
+	path = external/otto/otto-file-extension
+	url = https://github.com/otto-extensions/otto-file-extension.git
+[submodule "external/otto/otto-extension-index"]
+	path = external/otto/otto-extension-index
+	url = https://github.com/otto-extensions/otto-extension-index.git
+[submodule "external/otto/otto-extensions"]
+	path = external/otto/otto-extensions
+	url = https://github.com/otto-extensions/otto-extensions.git
+[submodule "external/otto/otto-display-orchestrator"]
+	path = external/otto/otto-display-orchestrator
+	url = https://github.com/otto-extensions/otto-display-orchestrator.git
+[submodule "external/otto/otto-update-ui"]
+	path = external/otto/otto-update-ui
+	url = https://github.com/otto-systems/otto-update-ui.git
