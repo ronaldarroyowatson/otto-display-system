@@ -1,6 +1,6 @@
 ﻿{
   "packageId": "otto-display-system",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "generatedAt": "REPLACE_AT_BUILD",
   "modules": [
     "display-orchestrator",
