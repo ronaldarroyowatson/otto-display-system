@@ -67,3 +67,9 @@
 [submodule "external/otto/otto-schedule-resolver-extension"]
 	path = external/otto/otto-schedule-resolver-extension
 	url = https://github.com/otto-extensions/otto-schedule-resolver-extension.git
+[submodule "external/otto/otto-assignments-normalizer-extension"]
+	path = external/otto/otto-assignments-normalizer-extension
+	url = https://github.com/otto-extensions/otto-assignments-normalizer-extension.git
+[submodule "external/otto/otto-api-gateway-factory-extension"]
+	path = external/otto/otto-api-gateway-factory-extension
+	url = https://github.com/otto-extensions/otto-api-gateway-factory-extension.git

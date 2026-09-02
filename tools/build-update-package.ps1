@@ -48,6 +48,8 @@ foreach ($folderName in @(
   "external/otto/otto-cli-extension",
   "external/otto/otto-command-service",
   "external/otto/otto-data-extension",
+  "external/otto/otto-assignments-normalizer-extension",
+  "external/otto/otto-api-gateway-factory-extension",
   "external/otto/otto-schedule-resolver-extension",
   "external/otto/otto-debug-extension",
   "external/otto/otto-calendar-connector-extension",
