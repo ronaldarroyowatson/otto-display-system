@@ -1,15 +1,18 @@
 ﻿param(
   [string]$PackageZip,
-  [string]$InstallRoot = "C:/opt/otto-display-system"
+  [string]$InstallRoot = "C:/opt/otto-display-system",
+  [switch]$AutoApprove
 )
 
 $ErrorActionPreference = "Stop"
-if (-not $PackageZip) { throw "PackageZip is required." }
 
 $root = Split-Path -Parent $PSScriptRoot
 $commandRunner = Join-Path $root "tools/run-otto-command.mjs"
-$packageBytes = (Get-Item $PackageZip).Length
-$requiredBytes = [math]::Max($packageBytes * 3, 300MB)
+$requiredBytes = 300MB
+if ($PackageZip -and (Test-Path $PackageZip)) {
+  $packageBytes = (Get-Item $PackageZip).Length
+  $requiredBytes = [math]::Max($packageBytes * 3, 300MB)
+}
 
 if (Test-Path $commandRunner) {
   $spaceResultRaw = node $commandRunner "file.check.space" "targetPath=$InstallRoot" "minBytes=$requiredBytes"
@@ -21,7 +24,25 @@ if (Test-Path $commandRunner) {
   $logDir = Join-Path $InstallRoot "logs"
   $activeLog = Join-Path $InstallRoot "logs/install-update.log"
   node $commandRunner "file.rotate.logs" "directory=$logDir" "maxFiles=12" "maxBytes=4000000" "activeLogFile=$activeLog" | Out-Null
+
+  # Preferred DRY path: all update orchestration through command-service registry.
+  $checkResultRaw = node $commandRunner "update.check"
+  if ($AutoApprove) {
+    try {
+      $checkResult = $checkResultRaw | ConvertFrom-Json
+      if ($checkResult.check_id) {
+        node $commandRunner "update.approve" "check_id=$($checkResult.check_id)" | Out-Null
+      }
+    } catch {
+      Write-Warning "Failed to auto-approve update check payload: $($_.Exception.Message)"
+    }
+  }
+
+  Write-Output "Triggered update flow through command-service registry."
+  return
 }
+
+if (-not $PackageZip) { throw "PackageZip is required when command runner is unavailable." }
 
 New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
 Expand-Archive -Path $PackageZip -DestinationPath $InstallRoot -Force

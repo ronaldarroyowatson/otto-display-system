@@ -5,10 +5,22 @@ UPDATE_BASE_URL="${OTTO_UPDATE_ARCHIVE_URL:-${OTTO_UPDATE_BASE_URL:-http://192.1
 INSTALL_ROOT="/opt/otto-display-system"
 BACKUP_ROOT="${INSTALL_ROOT}/backups"
 TARGET_VERSION="${1:-}"
+RUNNER_PATH="${OTTO_COMMAND_RUNNER:-${INSTALL_ROOT}/current/tools/run-otto-command.mjs}"
+
+if [ -f "${RUNNER_PATH}" ] && command -v node >/dev/null 2>&1; then
+  if [ -n "${TARGET_VERSION}" ]; then
+    echo "Target version '${TARGET_VERSION}' requested. Using policy-driven rollback via update.rollback."
+  fi
+  node "${RUNNER_PATH}" "update.rollback"
+  echo "Rollback requested through command-service."
+  exit 0
+fi
+
 SERVICE_NAME="otto-display-system"
 
 if [ -z "${TARGET_VERSION}" ]; then
   echo "Usage: rollback-display-system.sh <version>"
+  echo "Or provide OTTO_COMMAND_RUNNER for command-service rollback delegation."
   exit 1
 fi
 

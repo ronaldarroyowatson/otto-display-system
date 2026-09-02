@@ -214,7 +214,8 @@ This roadmap addresses a comprehensive DRY (Don't Repeat Yourself) audit of otto
 
 **Current Progress:**
 - Command parity gap for manifest/check/approve/defer/progress/history/rollback/backups/config has been closed through new registry commands.
-- Script migration started: `tools/pi/auto-update.sh` and `tools/register-auto-update.ps1` now call command-service update commands.
+- Script migration expanded: `tools/pi/auto-update.sh`, `tools/register-auto-update.ps1`, and `tools/install-update.ps1` now call command-service update commands.
+- Hosted script migration expanded: embedded updater payload in `update/hosted/install-display-system.sh` and rollback flow in `update/hosted/rollback-display-system.sh` now delegate through command-service first.
 
 **Blockers:** 
 - Need parity verification between command-service registry and generated CLI/API surfaces on deployment targets

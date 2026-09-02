@@ -205,7 +205,7 @@ This handoff document maintains continuous progress tracking across the 6-week D
 **Current Gap Summary:**
 - Present now: registry coverage for service/config plus full update orchestration command set.
 - Remaining gap: scheduling policy path for periodic checks across deployment targets.
-- Action required: standardize scheduler trigger integration (cron/systemd timer) to call `update.check` (+ optional `update.approve`) without reintroducing local update logic.
+- Action required: standardize scheduler trigger integration (cron/systemd timer) to call `update.check` (+ optional `update.approve`) without reintroducing local update logic, then remove fallback branches.
 
 ---
 
@@ -223,6 +223,9 @@ This handoff document maintains continuous progress tracking across the 6-week D
 **In Progress:**
 - Refactored `tools/pi/auto-update.sh` to call command-service update commands (removed local manifest/download/unzip logic).
 - Refactored `tools/register-auto-update.ps1` to emit a command-service-driven updater (`update.check` and optional `update.approve`).
+- Refactored `tools/install-update.ps1` to trigger command-service update flow first (`update.check` + optional `update.approve`) with legacy package extraction fallback only when command runner is unavailable.
+- Refactored hosted updater payload in `update/hosted/install-display-system.sh` to use command-service commands instead of embedded manifest/download/unzip flow.
+- Refactored `update/hosted/rollback-display-system.sh` to delegate to `update.rollback` when command runner is available, with legacy archive rollback fallback for compatibility.
 
 **Success Criteria:**
 - [ ] All 7 scripts removed
@@ -477,6 +480,23 @@ This handoff document maintains continuous progress tracking across the 6-week D
 
 **Next Action:**
 - Commit monorepo submodule pointer updates and continue replacing remaining update scripts.
+
+---
+
+### 2026-09-02 - Phase 1.1 Continued (Script Migration Batch 2)
+**Created by:** DRY Remediation Session  
+**Status:** ACTIVE - command-service migration expanded
+
+**Summary:**
+- ✅ Migrated additional update paths to command-service-first execution:
+   - `tools/install-update.ps1`
+   - `update/hosted/install-display-system.sh` (embedded `auto-update.sh` payload)
+   - `update/hosted/rollback-display-system.sh`
+- ✅ Confirmed command wiring in scripts for `update.check`, `update.approve`, `update.progress`, and `update.rollback`.
+- ⚠️ Bash syntax validation tooling is unavailable on this Windows host (`bash` not found), so shell syntax was validated by focused search and constrained patch scope.
+
+**Next Action:**
+- Standardize scheduler ownership (cron/systemd timer path) and remove remaining fallback branches.
 
 ---
 

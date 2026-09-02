@@ -80,6 +80,9 @@ Kickoff completed:
 - Started script migration to command-service update flow:
    - `tools/pi/auto-update.sh`
    - `tools/register-auto-update.ps1`
+   - `tools/install-update.ps1`
+   - `update/hosted/install-display-system.sh` (embedded updater payload)
+   - `update/hosted/rollback-display-system.sh`
 
 ---
 

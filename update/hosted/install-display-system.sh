@@ -99,50 +99,49 @@ fi
 cat > "${INSTALL_ROOT}/auto-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-SERVER_URL="${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}"
-MANIFEST_URL="${OTTO_UPDATE_MANIFEST_URL:-${SERVER_URL}/manifest.json}"
-INSTALL_ROOT="/opt/otto-display-system"
+INSTALL_ROOT="${OTTO_INSTALL_ROOT:-/opt/otto-display-system}"
 CURRENT_DIR="${INSTALL_ROOT}/current"
-BACKUP_DIR="${INSTALL_ROOT}/backups"
-PKG_URL="${OTTO_UPDATE_PACKAGE_URL:-${SERVER_URL}/otto-display-system-latest.zip}"
-SERVICE_NAME="otto-display-system"
-VERSION_FILE="${INSTALL_ROOT}/installed-version.txt"
+RUNNER_PATH="${OTTO_COMMAND_RUNNER:-${CURRENT_DIR}/tools/run-otto-command.mjs}"
+AUTO_APPROVE_UPDATES="${OTTO_AUTO_APPROVE_UPDATES:-false}"
 
-read_manifest_version() {
-  curl -fsSL "${MANIFEST_URL}" | node -e 'let data="";process.stdin.on("data",(chunk)=>data+=chunk);process.stdin.on("end",()=>{try{const parsed=JSON.parse(data);process.stdout.write(String(parsed.version ?? ""));}catch{process.exit(1);}});'
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js is required to run command-service update commands."
+  exit 1
+fi
+
+if [ ! -f "${RUNNER_PATH}" ]; then
+  echo "Command runner not found at ${RUNNER_PATH}"
+  exit 1
+fi
+
+run_command() {
+  local command_name="$1"
+  shift
+  node "${RUNNER_PATH}" "${command_name}" "$@"
 }
 
-remote_version="$(read_manifest_version 2>/dev/null || true)"
-local_version=""
-if [ -f "${VERSION_FILE}" ]; then
-  local_version="$(cat "${VERSION_FILE}" 2>/dev/null || true)"
+echo "Checking OttoUpdate health..."
+run_command "update.health" >/dev/null
+
+echo "Triggering update.check through command-service..."
+check_result="$(run_command "update.check")"
+echo "update.check => ${check_result}"
+
+if [ "${AUTO_APPROVE_UPDATES}" = "true" ]; then
+  check_id="$(node -e 'const input = process.argv[1]; try { const parsed = JSON.parse(input); if (parsed?.check_id) process.stdout.write(String(parsed.check_id)); } catch {}' "${check_result}")"
+  if [ -n "${check_id}" ]; then
+    echo "Auto-approving check ${check_id}"
+    approve_result="$(run_command "update.approve" "check_id=${check_id}")"
+    echo "update.approve => ${approve_result}"
+  fi
 fi
 
-if [ -n "${remote_version}" ] && [ "${remote_version}" = "${local_version}" ]; then
-  echo "No update available (installed=${local_version})."
-  exit 0
+progress_result="$(run_command "update.progress" 2>/dev/null || true)"
+if [ -n "${progress_result}" ]; then
+  echo "update.progress => ${progress_result}"
 fi
 
-mkdir -p "$BACKUP_DIR"
-timestamp="$(date +%Y%m%d%H%M%S)"
-if [ -f "${INSTALL_ROOT}/otto-display-system.zip" ]; then
-  cp "${INSTALL_ROOT}/otto-display-system.zip" "${BACKUP_DIR}/otto-display-system-${timestamp}.zip"
-fi
-
-curl -fsSL "$PKG_URL" -o "${INSTALL_ROOT}/otto-display-system.zip"
-rm -rf "$CURRENT_DIR"
-mkdir -p "$CURRENT_DIR"
-unzip -o "${INSTALL_ROOT}/otto-display-system.zip" -d "$CURRENT_DIR"
-
-if [ -n "${remote_version}" ]; then
-  printf '%s\n' "${remote_version}" > "${VERSION_FILE}"
-fi
-
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl restart "${SERVICE_NAME}" >/dev/null 2>&1 || true
-fi
-
-echo "Update applied${remote_version:+ to version ${remote_version}}."
+echo "Update check flow completed through command-service."
 EOF
 chmod +x "${INSTALL_ROOT}/auto-update.sh"
 
