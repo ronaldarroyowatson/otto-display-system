@@ -10,8 +10,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Import the global registry from @otto/update
-import { getGlobalSelfHealingRegistry } from '../../../external/otto/otto-update/src/selfHealing/registry.js';
+// Import the global registry from the built @otto/update module
+// Uses the compiled dist/ output instead of source TypeScript
+import { getGlobalSelfHealingRegistry } from '../../../external/otto/otto-update/dist/selfHealing/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
