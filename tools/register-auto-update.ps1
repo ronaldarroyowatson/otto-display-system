@@ -14,6 +14,7 @@ if (-not (Test-Path '$commandRunner')) {
 }
 
 `$env:OTTO_UPDATE_BASE_URL = '$UpdateBaseUrl'
+node '$commandRunner' 'update.validate.install' | Out-Null
 `$check = node '$commandRunner' 'update.check'
 if ('$approveValue' -eq 'true') {
   try {

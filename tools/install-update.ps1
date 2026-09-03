@@ -25,6 +25,8 @@ if (Test-Path $commandRunner) {
   $activeLog = Join-Path $InstallRoot "logs/install-update.log"
   node $commandRunner "file.rotate.logs" "directory=$logDir" "maxFiles=12" "maxBytes=4000000" "activeLogFile=$activeLog" | Out-Null
 
+  node $commandRunner "update.validate.install" | Out-Null
+
   # Preferred DRY path: all update orchestration through command-service registry.
   $checkResultRaw = node $commandRunner "update.check"
   if ($AutoApprove) {

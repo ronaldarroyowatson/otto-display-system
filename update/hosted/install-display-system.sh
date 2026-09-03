@@ -123,6 +123,9 @@ run_command() {
 echo "Checking OttoUpdate health..."
 run_command "update.health" >/dev/null
 
+echo "Validating install integrity and dependency health..."
+run_command "update.validate.install" >/dev/null
+
 echo "Triggering update.check through command-service..."
 check_result="$(run_command "update.check")"
 echo "update.check => ${check_result}"
