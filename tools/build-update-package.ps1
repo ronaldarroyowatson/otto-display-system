@@ -33,7 +33,7 @@ $manifest | ConvertTo-Json -Depth 8 | Set-Content $resolvedManifestPath -Encodin
 $payloadRoot = Join-Path $target "payload"
 New-Item -ItemType Directory -Path $payloadRoot -Force | Out-Null
 
-foreach ($folderName in @("modules", "apps", "config", "schemas")) {
+foreach ($folderName in @("modules", "apps", "config", "schemas", "tools", "runtime")) {
   $sourceFolder = Join-Path $root $folderName
   $destinationFolder = Join-Path $payloadRoot $folderName
   New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null

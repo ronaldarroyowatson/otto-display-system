@@ -103,6 +103,11 @@ INSTALL_ROOT="${OTTO_INSTALL_ROOT:-/opt/otto-display-system}"
 CURRENT_DIR="${INSTALL_ROOT}/current"
 RUNNER_PATH="${OTTO_COMMAND_RUNNER:-${CURRENT_DIR}/tools/run-otto-command.mjs}"
 AUTO_APPROVE_UPDATES="${OTTO_AUTO_APPROVE_UPDATES:-false}"
+SERVICE_NAME="${OTTO_SERVICE_NAME:-otto-display-system}"
+LEGACY_BASE_URL="${OTTO_LEGACY_UPDATE_BASE_URL:-${OTTO_UPDATE_BASE_URL:-http://192.168.2.23:8090}}"
+LEGACY_MANIFEST_URL="${OTTO_UPDATE_MANIFEST_URL:-${LEGACY_BASE_URL}/manifest.json}"
+LEGACY_PACKAGE_URL="${OTTO_UPDATE_PACKAGE_URL:-${LEGACY_BASE_URL}/otto-display-system-latest.zip}"
+VERSION_FILE="${INSTALL_ROOT}/installed-version.txt"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is required to run command-service update commands."
@@ -120,8 +125,49 @@ run_command() {
   node "${RUNNER_PATH}" "${command_name}" "$@"
 }
 
+read_manifest_version() {
+  curl -fsSL "${LEGACY_MANIFEST_URL}" | node -e 'let data="";process.stdin.on("data",(chunk)=>data+=chunk);process.stdin.on("end",()=>{try{const parsed=JSON.parse(data);process.stdout.write(String(parsed.version ?? ""));}catch{process.exit(1);}});'
+}
+
+legacy_update_fallback() {
+  echo "otto-update API unavailable. Falling back to manifest/package updater."
+
+  local remote_version=""
+  remote_version="$(read_manifest_version 2>/dev/null || true)"
+
+  local local_version=""
+  if [ -f "${VERSION_FILE}" ]; then
+    local_version="$(cat "${VERSION_FILE}" 2>/dev/null || true)"
+  fi
+
+  if [ -n "${remote_version}" ] && [ "${remote_version}" = "${local_version}" ]; then
+    echo "No update available (installed=${local_version})."
+    return 0
+  fi
+
+  local package_path="${INSTALL_ROOT}/otto-display-system.zip"
+  curl -fsSL "${LEGACY_PACKAGE_URL}" -o "${package_path}"
+
+  rm -rf "${CURRENT_DIR}"
+  mkdir -p "${CURRENT_DIR}"
+  unzip -o "${package_path}" -d "${CURRENT_DIR}"
+
+  if [ -n "${remote_version}" ]; then
+    printf '%s\n' "${remote_version}" > "${VERSION_FILE}"
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl restart "${SERVICE_NAME}" >/dev/null 2>&1 || true
+  fi
+
+  echo "Fallback update applied${remote_version:+ to version ${remote_version}}."
+}
+
 echo "Checking OttoUpdate health..."
-run_command "update.health" >/dev/null
+if ! run_command "update.health" >/dev/null 2>&1; then
+  legacy_update_fallback
+  exit 0
+fi
 
 echo "Validating install integrity and dependency health..."
 run_command "update.validate.install" >/dev/null
