@@ -8,13 +8,12 @@
 
 **Context**: Pi running stale `/opt/otto-display-system/auto-update.sh` that lacked fallback retrieval logic, causing update failures until the installer was re-run.
 
-**Initial Approach**: Create specific staleness detection + repair for auto-update.sh
-- Handler: `updateRepairAutoUpdateScript.mjs`
-- Validator: Check for 3 required bash functions
+**Initial Approach**: Rather than create a point-fix handler, we decided to build a reusable self-healing framework into OttoUpdate that works for ANY artifact
+- Validator: Check for required bash functions
 - Repair: Regenerate from `runtime/auto-update.sh.template`
-- Integration: Embed in tools/pi/auto-update.sh script
+- Framework: SelfHealingRegistry in @otto/update, usable by all programs
 
-**Result**: auto-update.sh stays healthy. ✓
+**Result**: auto-update.sh stays healthy, and all future programs get the same capability. ✓
 
 ---
 
@@ -92,27 +91,26 @@ Each program:
 
 ## Three-Part Implementation
 
-### Part 1: Command-Service Handler (Auto-Update Specific)
+### Part 1: Display-Runtime Initialization (Artifact Registration)
 
-**Scope**: otto-command-service repository
-**Files Changed**: 5
-**Lines**: 200+
+**Scope**: otto-display-system repository
+**Files Changed**: 2
+**Lines**: 120+
 
 ```
-external/otto/otto-command-service/
-├── src/handlers/
-│   ├── updateRepairAutoUpdateScript.mjs    [NEW] Repair logic
-│   └── updateInstallPreflight.mjs          [MOD] Detect staleness
-├── src/schemas/
-│   └── update.repair.auto-update-script.json [NEW] Command schema
-└── tests/
-    ├── updateRepairAutoUpdateScript.test.ts  [NEW] Repair tests
-    └── updateInstallPreflight.test.ts        [MOD] Staleness tests
+apps/display-runtime/src/
+├── self-healing-init.mjs             [NEW] Registers artifacts with framework
+└── server.mjs                         [MOD] Calls init on startup
+
+external/otto/otto-command-service/src/handlers/
+└── updateInstallPreflight.mjs         [MOD] Uses framework for validation
 ```
 
-**Responsibility**: Handle the specific case of auto-update.sh repair
+**Responsibility**: Initialize SelfHealingRegistry with display-system artifacts, call from server startup
 
-**Outcome**: Command-service tests 37/37 ✓
+**Outcome**: Artifacts automatically validated on each server start ✓
+
+**DRY Consolidation**: Removed duplicate handlers (updateRepairAutoUpdateScript.mjs, schema, tests) - now handled by framework
 
 ---
 
@@ -502,18 +500,21 @@ The OttoUpdate Self-Healing Framework is the latter.
 - ✓ src/index.ts (updated)
 - ✓ README.md (updated)
 
-### Otto-Command-Service Repository (Published)
-- ✓ src/handlers/updateRepairAutoUpdateScript.mjs
-- ✓ src/schemas/update.repair.auto-update-script.json
-- ✓ tests/updateRepairAutoUpdateScript.test.ts
-- ✓ tests/updateInstallPreflight.test.ts (updated)
+### Otto-Command-Service Repository (Refactored for DRY)
+- ✓ src/handlers/updateInstallPreflight.mjs (updated to use SelfHealingRegistry)
+- ✓ REMOVED: src/handlers/updateRepairAutoUpdateScript.mjs (consolidated into @otto/update)
+- ✓ REMOVED: src/schemas/update.repair.auto-update-script.json (framework handles validation)
+- ✓ REMOVED: tests/updateRepairAutoUpdateScript.test.ts (framework test suite covers this)
 
 ### Otto-Display-System Repository (Published)
-- ✓ SELF-HEALING-ARCHITECTURE.md
+- ✓ apps/display-runtime/src/self-healing-init.mjs (NEW: artifact registration)
+- ✓ apps/display-runtime/src/server.mjs (updated to call init)
+- ✓ SELF-HEALING-ARCHITECTURE.md (updated to reflect refactoring)
+- ✓ IMPLEMENTATION-SUMMARY.md (this file, updated to reflect DRY consolidation)
 - ✓ runtime/auto-update.sh.template
 - ✓ tools/pi/auto-update.sh
 - ✓ update/hosted/install-display-system.sh
 
 ---
 
-**Status**: Framework complete, documented, tested, and published to GitHub. Ready for ecosystem adoption.
+**Status**: Framework complete, documented, tested, published to GitHub, and integrated into display-system. DRY refactoring complete - duplicate handlers removed, single source of truth in @otto/update. Ready for ecosystem adoption.

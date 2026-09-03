@@ -319,19 +319,18 @@ external/otto/otto-update/
 ```
 external/otto/otto-command-service/
 ├── src/handlers/
-│   └── updateRepairAutoUpdateScript.mjs  # Repair handler (command-service)
-├── src/schemas/
-│   └── update.repair.auto-update-script.json  # Command schema
-├── tests/
-│   └── updateRepairAutoUpdateScript.test.ts   # Handler tests
-└── src/handlers/
-    └── updateInstallPreflight.mjs  # Detects staleness (uses framework)
+│   └── updateInstallPreflight.mjs  # Uses SelfHealingRegistry for validation
+│                                     # (no longer needs duplicate repair handler)
 
 apps/display-runtime/src/
-└── initialization.ts  # (Would use SelfHealingRegistry)
+├── self-healing-init.mjs            # Initializes framework with artifacts
+└── server.mjs                        # Calls initialization on startup
 
 tools/pi/
 └── auto-update.sh                   # Embeds repair flow
+```
+
+**Note**: The framework replaces what would have been separate `updateRepairAutoUpdateScript.mjs` handler. Now all repair logic is centralized in `@otto/update`'s `SelfHealingRegistry` class.
 
 runtime/
 └── auto-update.sh.template          # Canonical master template
