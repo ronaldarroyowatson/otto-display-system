@@ -1,4 +1,5 @@
 # Otto Display System - Functional DRY Audit
+
 ## Against Otto Systems Core Infrastructure
 
 **Date:** 2026-09-02  
@@ -14,15 +15,18 @@
 **Component:** `otto-update`  
 **Source of Truth:** `external/otto/otto-update/` (Rust state machine, safety policies, rollback engine)  
 **Purpose:** Centralized update orchestration with:
+
 - Channel management (stable/beta/canary)
 - Deferral policies (pause updates, hold versions)
 - Rollback coordination (versioned backups, state recovery)
 - Safety validation (pre-flight checks, post-apply verification)
 
 #### Current Status in otto-display
+
 Otto-display implements **custom update logic** instead of delegating to otto-update:
 
 **Custom Update Scripts (DUPLICATION):**
+
 - [tools/build-update-package.ps1](tools/build-update-package.ps1) - Creates ZIP payload from source folders
 - [tools/install-update.ps1](tools/install-update.ps1) - Extracts and deploys ZIP directly
 - [tools/register-auto-update.ps1](tools/register-auto-update.ps1) - Registers PowerShell auto-update script
@@ -32,6 +36,7 @@ Otto-display implements **custom update logic** instead of delegating to otto-up
 - [install/otto-display-system/scripts/rollback-display-system.sh](install/otto-display-system/scripts/rollback-display-system.sh) - Duplicate rollback
 
 **Duplicate Functionality:**
+
 ```bash
 # auto-update.sh logic:
 1. Fetch manifest.json → parse version
@@ -51,6 +56,7 @@ Otto-display implements **custom update logic** instead of delegating to otto-up
 ```
 
 **Code Duplication Analysis:**
+
 - Version comparison logic: Implemented locally in bash (auto-update.sh:16-27)
   - otto-update has: Manifest versioning + semantic version comparison
 - Backup strategy: Local timestamp-based naming
@@ -59,13 +65,16 @@ Otto-display implements **custom update logic** instead of delegating to otto-up
   - otto-update has: State machine tracking + failure recovery
 
 **DRY Violation Severity:** 🔴 **CRITICAL**
+
 - 3 duplicate rollback scripts (logic repeated)
 - 2 platform-specific update runners (same logic, different shells)
 - No integration with otto-update's safety policies or deferral engine
 - Version skew risk: display-specific update logic can diverge from otto-update
 
 #### Recommendation
+
 **REFACTOR:** Delegate to otto-update service
+
 1. Convert display-runtime to call otto-update API instead of manual scripting
 2. Remove [tools/build-update-package.ps1](tools/build-update-package.ps1), [tools/install-update.ps1](tools/install-update.ps1), [tools/register-auto-update.ps1](tools/register-auto-update.ps1)
 3. Replace [tools/pi/auto-update.sh](tools/pi/auto-update.sh) with otto-update client
@@ -82,12 +91,14 @@ Otto-display implements **custom update logic** instead of delegating to otto-up
 **Component:** `otto-osss` (Ordered State Storage Service)  
 **Source of Truth:** `external/otto/otto-osss/` (Rust with versioned state, audit events, vault operations)  
 **Purpose:** Centralized, versioned state persistence:
+
 - Ordered session management (tokens, auth state)
 - Vault operations (encrypted secrets storage)
 - Audit trail generation (tamper evidence)
 - ACID-like guarantees for state recovery
 
 #### Current Status in otto-display
+
 Otto-display implements **custom state adapters** that DO NOT use otto-osss:
 
 **Duplicate State Implementations:**
@@ -99,6 +110,7 @@ Otto-display implements **custom state adapters** that DO NOT use otto-osss:
    - Code: ~220 lines of local state management
 
 2. **Calendar Runtime State** [external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs](external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs) (lines 1-80)
+
    ```typescript
    // Tries to load osss-adapter as fallback:
    let StateManager;
@@ -109,6 +121,7 @@ Otto-display implements **custom state adapters** that DO NOT use otto-osss:
      StateManager = null;  // Falls back to plaintext file I/O!
    }
    ```
+
    - Stores provider config in: `mempalace/calendar-provider-config.json`
    - Stores tokens in: `mempalace/calendar-provider-tokens.json`
    - **No encryption, no versioning, no audit**
@@ -118,6 +131,7 @@ Otto-display implements **custom state adapters** that DO NOT use otto-osss:
    - No integration with otto-osss vault
 
 **Duplicate Functionality:**
+
 - Local KeyManager: Implements key loading from env/file/inline (crypto-adapter.mjs:120-190)
   - otto-osss has: Structured key management + vault storage
 - State versioning: Calendar runtime tracks state manually
@@ -126,6 +140,7 @@ Otto-display implements **custom state adapters** that DO NOT use otto-osss:
   - otto-osss has: Audit event emission (contracts.rs:28)
 
 **Code Duplication Analysis:**
+
 ```javascript
 // osss-adapter.mjs (local reimplementation)
 export class StateManager {
@@ -146,13 +161,16 @@ pub trait AuditContract {
 ```
 
 **DRY Violation Severity:** 🔴 **CRITICAL**
+
 - StateManager class reimplements OSSS read/write/delete without vault semantics
 - OAuth credentials stored in plaintext JSON (calendar-provider-tokens.json)
 - No tamper detection, no recovery guarantees
 - Each runtime has its own state directory (not coordinated via OSSS)
 
 #### Recommendation
+
 **REFACTOR:** Use otto-osss service instead of local adapters
+
 1. Remove [apps/display-runtime/src/lib/osss-adapter.mjs](apps/display-runtime/src/lib/osss-adapter.mjs)
 2. Implement OSSS client in display-runtime to call otto-osss API
 3. Migrate calendar tokens from `mempalace/calendar-provider-tokens.json` → otto-osss vault
@@ -169,12 +187,14 @@ pub trait AuditContract {
 **Component:** `otto-crypto`  
 **Source of Truth:** `external/otto/otto-crypto/` (Rust with AES-256-GCM, HKDF, signing, KDF)  
 **Purpose:** Centralized cryptographic operations:
+
 - Authenticated encryption (AES-256-GCM)
 - Key derivation (HKDF, PBKDF2, Argon2id)
 - Signing/verification (Ed25519)
 - Key handle management (prevent key exposure)
 
 #### Current Status in otto-display
+
 Otto-display implements **custom crypto adapter** that reimplements otto-crypto functionality:
 
 **Duplicate Crypto Implementation** [apps/display-runtime/src/lib/crypto-adapter.mjs](apps/display-runtime/src/lib/crypto-adapter.mjs) (~190 lines)
@@ -204,6 +224,7 @@ pub trait KeyDerivationContract {
 ```
 
 **Duplicate Functionality:**
+
 - AES-256-GCM: Implemented locally (crypto-adapter.mjs:12-43)
   - otto-crypto has: Hardware-accelerated Rust implementation
 - PBKDF2 key derivation: Implemented locally (crypto-adapter.mjs:77-82)
@@ -212,6 +233,7 @@ pub trait KeyDerivationContract {
   - otto-crypto has: Key handle abstraction (prevents key leakage)
 
 **Code Duplication Analysis:**
+
 ```javascript
 // Local code (NOT using otto-crypto):
 KeyManager.registerKey('app-key', {
@@ -227,19 +249,23 @@ encrypt(EncryptCommand { plaintext, key_handle })  // Never exposes actual key
 ```
 
 **Security Issues:**
+
 - Keys loaded as JS Buffer objects (can be inspected in memory)
 - otto-crypto zeroizes keys after use (memory safety)
 - No signing/verification available locally
 - No Argon2id support (strong password hashing)
 
 **DRY Violation Severity:** 🔴 **CRITICAL**
+
 - 190-line crypto adapter reimplements otto-crypto features
 - JS-based crypto is less secure than Rust implementations
 - Key management doesn't follow handle pattern (security risk)
 - No signing/verification operations available
 
 #### Recommendation
+
 **REFACTOR:** Use otto-crypto service instead of local crypto
+
 1. Remove [apps/display-runtime/src/lib/crypto-adapter.mjs](apps/display-runtime/src/lib/crypto-adapter.mjs)
 2. Implement otto-crypto client in display-runtime
 3. Call otto-crypto for all encryption/decryption/signing operations
@@ -256,17 +282,20 @@ encrypt(EncryptCommand { plaintext, key_handle })  // Never exposes actual key
 **Component:** `otto-kernel`  
 **Source of Truth:** `external/otto/otto-kernel/` (Module discovery, lifecycle management)  
 **Purpose:** Process lifecycle orchestration:
+
 - Module loading + initialization
 - Graceful shutdown coordination
 - Extension discovery (EDS)
 - Process health monitoring
 
 #### Current Status in otto-display
+
 Otto-display manages process lifecycle via **custom systemd units** instead of otto-kernel:
 
 **Direct Systemd Management (NO otto-kernel integration):**
 
 1. **Display Runtime Service Unit** [install/otto-display-system/scripts/otto-display-system.service](install/otto-display-system/scripts/otto-display-system.service)
+
    ```ini
    [Unit]
    Description=Otto Display System Runtime
@@ -281,11 +310,13 @@ Otto-display manages process lifecycle via **custom systemd units** instead of o
    ProtectHome=true
    ProtectSystem=full
    ```
+
    - Direct node process execution
    - No otto-kernel module loader
    - No EDS integration
 
 2. **Installer Creates Systemd Unit** [update/hosted/install-display-system.sh](update/hosted/install-display-system.sh) (lines 52-74)
+
    ```bash
    cat > "$SERVICE_FILE" <<EOF
    ExecStart=/usr/bin/env node apps/display-runtime/src/server.mjs
@@ -293,11 +324,13 @@ Otto-display manages process lifecycle via **custom systemd units** instead of o
    systemctl daemon-reload
    systemctl enable --now "$SERVICE_NAME"
    ```
+
    - Bypasses otto-kernel's process coordination
    - No module lifecycle callbacks
    - No graceful shutdown through kernel
 
 **Missing otto-kernel Integration:**
+
 - Module discovery: display-runtime loads modules ad-hoc
   - otto-kernel has: EDS + manifests/module.json scanning
 - Graceful shutdown: Relies on systemd SIGTERM handling
@@ -306,6 +339,7 @@ Otto-display manages process lifecycle via **custom systemd units** instead of o
   - otto-kernel has: Module status tracking
 
 **Code Usage Analysis:**
+
 ```typescript
 // otto-kernel is used for EDS only:
 import { executeEdsCommand } from "external/otto/otto-kernel/src/eds/eds-runtime.mjs";
@@ -318,13 +352,16 @@ process.on('SIGTERM', () => { ... });  // Custom signal handling
 ```
 
 **DRY Violation Severity:** 🟡 **HIGH**
+
 - Systemd units reimplementing what otto-kernel should manage
 - Process coordination not integrated with otto ecosystem
 - No graceful shutdown through kernel
 - EDS is used, but process lifecycle is not
 
 #### Recommendation
+
 **REFACTOR:** Delegate process lifecycle to otto-kernel
+
 1. Modify [apps/display-runtime/src/server.mjs](apps/display-runtime/src/server.mjs) to register with otto-kernel
 2. Remove direct `ExecStart=/usr/bin/env node ...` systemd pattern
 3. Use otto-kernel's module initialization callbacks
@@ -345,10 +382,13 @@ process.on('SIGTERM', () => { ... });  // Custom signal handling
 **Purpose:** Command routing, schema validation, handler dispatch
 
 #### Current Status in otto-display
+
 Otto-display **correctly uses** otto-command-service with minimal duplication:
 
 **Proper Usage Patterns:**
+
 1. **Command Executor** [apps/runtime-shared/src/command-executor.mjs](apps/runtime-shared/src/command-executor.mjs)
+
    ```javascript
    const schemas = await loadSchemas();  // Load from otto-command-service/src/schemas
    const schema = schemas.find(s => s.name === commandName);
@@ -356,20 +396,24 @@ Otto-display **correctly uses** otto-command-service with minimal duplication:
    const handler = await import(modulePath);  // Load handler from otto-command-service
    return await handler[schema.routing.handlerExport](payload);
    ```
+
    ✓ Loads schemas from otto-command-service
    ✓ Loads handlers from otto-command-service
    ✓ No reimplementation
 
 2. **Otto-Kernel Command Router** [external/otto/otto-kernel/src/kernel/commandRouter.ts](external/otto/otto-kernel/src/kernel/commandRouter.ts)
+
    ```typescript
    export class CommandRouter {
      register(commandName: string, handler: CommandHandler): void
      async route(command: CommandEnvelope): Promise<unknown>
    }
    ```
+
    ✓ Proper abstraction, no duplication
 
 **DRY Violation Severity:** 🟢 **NONE** (Correct pattern)
+
 - Command loading properly delegated to otto-command-service
 - Schema source-of-truth respected
 - No local reimplementation
@@ -383,25 +427,32 @@ Otto-display **correctly uses** otto-command-service with minimal duplication:
 **Purpose:** OAuth provider integration, token exchange, auth state
 
 #### Current Status in otto-display
+
 Otto-display uses otto-auth-extension properly with minor duplication in calendar runtime:
 
 **Proper Usage:**
+
 1. **OAuth Token Exchange** [external/otto/otto-command-service/src/handlers/oauthExchangeToken.mjs](external/otto/otto-command-service/src/handlers/oauthExchangeToken.mjs)
+
    ```javascript
    import { exchangeMicrosoftToken, exchangeGoogleToken } from "../../../otto-auth-extension/src/oauth-token-exchanger.js";
    ```
+
    ✓ Calls otto-auth-extension functions
    ✓ No reimplementation
 
 2. **Calendar Runtime Token Storage** [external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs](external/otto/otto-calendar-connector-extension/src/calendar-runtime.mjs) (lines 290-360)
+
    ```javascript
    // Issue: Stores tokens in plaintext JSON instead of using otto-osss vault
    await saveProviderStore(store);  // Writes to mempalace/calendar-provider-tokens.json
    ```
+
    - **Minor duplication:** Token storage logic instead of delegating to otto-osss
    - This is secondary to the OSSS violation (already flagged as CRITICAL)
 
 **DRY Violation Severity:** 🟡 **MEDIUM** (Resolved by OSSS refactor)
+
 - OAuth exchange is correctly delegated
 - Token storage duplication is secondary to OSSS violation
 - Once OSSS is implemented, this becomes NONE
@@ -411,7 +462,7 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 ## SECTION 3: SUMMARY TABLE
 
 | Component | Source of Truth | Current Status | Severity | Duplication Type | Effort | Critical Path |
-|-----------|-----------------|-----------------|----------|------------------|--------|----------------|
+| ----------- | ----------------- | ----------------- | ---------- | ------------------ | -------- | ---------------- |
 | **Update Engine** | otto-update (Rust) | 3x custom scripts | 🔴 CRITICAL | Reimplemented state machine + policy engine | 8-10 days | Remove build/install/auto-update scripts |
 | **State Storage** | otto-osss (Rust) | File-based adapter | 🔴 CRITICAL | Custom StateManager mimics OSSS without vault/audit | 12-15 days | Integrate OSSS API, migrate tokens |
 | **Cryptography** | otto-crypto (Rust) | Node.js adapter | 🔴 CRITICAL | 190-line AES/PBKDF2 reimplementation | 10-12 days | Use otto-crypto API, remove adapter |
@@ -424,20 +475,24 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 ## SECTION 4: REMEDIATION ROADMAP
 
 ### Phase 1: Foundation (Weeks 1-2) - 18-22 days
+
 **Focus:** Core infrastructure duplications that block other fixes
 
 **Week 1 (Days 1-5):**
+
 - Remove [tools/build-update-package.ps1](tools/build-update-package.ps1), [tools/install-update.ps1](tools/install-update.ps1), [tools/register-auto-update.ps1](tools/register-auto-update.ps1)
 - Remove [tools/pi/auto-update.sh](tools/pi/auto-update.sh) (replace with otto-update client)
 - Remove [update/hosted/install-display-system.sh](update/hosted/install-display-system.sh)
 - Implement otto-update client wrapper
 
 **Week 2 (Days 6-10):**
+
 - Remove [apps/display-runtime/src/lib/crypto-adapter.mjs](apps/display-runtime/src/lib/crypto-adapter.mjs)
 - Implement otto-crypto client
 - Migrate encryption calls to otto-crypto API
 
 ### Phase 2: State Layer (Weeks 3-4) - 12-15 days
+
 **Focus:** State management and audit trail
 
 - Remove [apps/display-runtime/src/lib/osss-adapter.mjs](apps/display-runtime/src/lib/osss-adapter.mjs)
@@ -446,6 +501,7 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 - Implement audit event emission
 
 ### Phase 3: Process Orchestration (Week 5) - 6-8 days
+
 **Focus:** otto-kernel integration
 
 - Modify [apps/display-runtime/src/server.mjs](apps/display-runtime/src/server.mjs) to register with kernel
@@ -453,6 +509,7 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 - Implement graceful shutdown through kernel
 
 ### Phase 4: Validation & Hardening (Week 6) - 5-7 days
+
 **Focus:** Testing and rollback safety
 
 - Integration testing with all otto services
@@ -464,6 +521,7 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 ## SECTION 5: RISK ASSESSMENT
 
 ### High-Risk Areas
+
 1. **Update Mechanism:** If otto-update client has issues, deployments break
    - Mitigation: Extensive local testing, gradual rollout to canary Pi
 2. **Cryptography:** Any change to encryption format breaks existing tokens
@@ -472,6 +530,7 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
    - Mitigation: Backup vault before migration, test recovery
 
 ### Dependencies
+
 - otto-update must be fully functional before removing custom scripts
 - otto-osss client must be ready before token migration
 - otto-crypto must support all current algorithms
@@ -483,22 +542,26 @@ Otto-display uses otto-auth-extension properly with minor duplication in calenda
 For each phase to be DONE:
 
 **Phase 1 - Update Mechanism:**
+
 - ✅ otto-update client invoked successfully
 - ✅ Version checking works through otto-update API
 - ✅ Rollback succeeds from otto-update state machine
 - ✅ Live Pi updates using otto-update, not custom scripts
 
 **Phase 2 - Cryptography:**
+
 - ✅ All encryption calls proxied to otto-crypto
 - ✅ No direct crypto module usage in display-runtime
 - ✅ Key migration successful (test read old tokens, encrypt with otto-crypto)
 
 **Phase 3 - State Storage:**
+
 - ✅ Calendar tokens stored in otto-osss vault
 - ✅ Audit trail emitted for all token operations
 - ✅ OSSS recovery works (import backup, verify tokens)
 
 **Phase 4 - Process Lifecycle:**
+
 - ✅ otto-kernel starts display-runtime
 - ✅ EDS provides extension registry to runtime
 - ✅ Graceful shutdown through kernel signal handling
@@ -509,6 +572,7 @@ For each phase to be DONE:
 ## APPENDIX: File Locations Reference
 
 **Update Mechanism Files (to remove/refactor):**
+
 - [tools/build-update-package.ps1](tools/build-update-package.ps1)
 - [tools/install-update.ps1](tools/install-update.ps1)
 - [tools/register-auto-update.ps1](tools/register-auto-update.ps1)
@@ -518,12 +582,15 @@ For each phase to be DONE:
 - [install/otto-display-system/scripts/rollback-display-system.sh](install/otto-display-system/scripts/rollback-display-system.sh)
 
 **Cryptography Files (to remove/refactor):**
+
 - [apps/display-runtime/src/lib/crypto-adapter.mjs](apps/display-runtime/src/lib/crypto-adapter.mjs)
 
 **State Storage Files (to remove/refactor):**
+
 - [apps/display-runtime/src/lib/osss-adapter.mjs](apps/display-runtime/src/lib/osss-adapter.mjs)
 
 **Process Management Files (to modify):**
+
 - [apps/display-runtime/src/server.mjs](apps/display-runtime/src/server.mjs)
 - [install/otto-display-system/scripts/otto-display-system.service](install/otto-display-system/scripts/otto-display-system.service)
 - [update/hosted/install-display-system.sh](update/hosted/install-display-system.sh)

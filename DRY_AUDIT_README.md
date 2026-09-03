@@ -20,6 +20,7 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 ## 📚 Documentation Map
 
 ### For Quick Understanding
+
 1. **[ROADMAP.md](ROADMAP.md)** - Start here! Comprehensive 6-week plan
    - Executive summary of all 4 violations
    - Phase-by-phase breakdown (Phase 1-5)
@@ -27,6 +28,7 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
    - Risk assessment and blockers
 
 ### For Tracking Progress
+
 2. **[HANDOFF.md](HANDOFF.md)** - Living progress document
    - Current status and focus
    - Completed milestones
@@ -35,17 +37,19 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
    - Update log for continuous tracking
 
 ### For Technical Deep Dives
+
 3. **[FUNCTIONAL_DRY_AUDIT.md](FUNCTIONAL_DRY_AUDIT.md)** - Generated detailed audit
    - Code-level violations with examples
    - Security impact analysis
    - File locations and line counts
 
-4. **[DRY_AUDIT_REPORT.md](DRY_AUDIT_REPORT.md)** - Generated summary report
+2. **[DRY_AUDIT_REPORT.md](DRY_AUDIT_REPORT.md)** - Generated summary report
    - High-level findings
    - Recommendations
    - Timeline breakdown
 
 ### For Team Communication
+
 5. **[/memories/repo/functional-dry-audit-critical.md](/memories/repo/functional-dry-audit-critical.md)** - Session memory (critical findings)
    - Quick reference of 4 violations
    - Current status of work
@@ -59,6 +63,7 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 **Progress:** 8+ / 48 days complete
 
 ### ✅ Completed (Phase 0)
+
 - Structural audit (identified 21 submodule candidates)
 - Created 17/19 git submodules (~450 MB removed)
 - Functional audit (found 4 violations)
@@ -66,29 +71,32 @@ We completed a comprehensive **DRY (Don't Repeat Yourself) audit** of otto-displ
 - Created roadmap and handoff docs
 
 ### → Next (Phase 1)
+
 - Research command-service update command contracts and generated CLI/API surfaces
 - Remove 7 update-related scripts
 - Timeline: Week 1-2 (18-22 days)
 
 Kickoff completed:
+
 - Confirmed command IDs: `config.show`, `config.set`, `service.install`, `service.start`, `service.status`, `service.stop`, `service.uninstall`
 - Confirmed generated surfaces in `external/otto/otto-update/src/generated_cli/index.ts` and `external/otto/otto-update/src/generated_api/index.ts`
 - Added and pushed update orchestration commands in command-service:
-   - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
-   - `update.approve`, `update.defer`, `update.progress`, `update.history`
-   - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
+  - `update.health`, `update.state`, `update.check`, `update.manifest`, `update.policy`
+  - `update.approve`, `update.defer`, `update.progress`, `update.history`
+  - `update.rollback`, `update.backups`, `update.config.get`, `update.config.set`
 - Started script migration to command-service update flow:
-   - `tools/pi/auto-update.sh`
-   - `tools/register-auto-update.ps1`
-   - `tools/install-update.ps1`
-   - `update/hosted/install-display-system.sh` (embedded updater payload)
-   - `update/hosted/rollback-display-system.sh`
+  - `tools/pi/auto-update.sh`
+  - `tools/register-auto-update.ps1`
+  - `tools/install-update.ps1`
+  - `update/hosted/install-display-system.sh` (embedded updater payload)
+  - `update/hosted/rollback-display-system.sh`
 
 ---
 
 ## 🚨 Critical Items
 
 ### Know These 4 Violations
+
 1. **UPDATE MECHANISM** - 7 duplicate scripts (390 lines)
    - Remove: tools/build-update-package.ps1 + 6 others
    - Use: otto-update instead
@@ -112,10 +120,12 @@ Kickoff completed:
 ## 🔒 Security Status
 
 **Current:** AT RISK
+
 - OAuth tokens stored in plaintext
 - No encryption or audit trail
 
 **Target:** SECURE (after Phase 2)
+
 - All secrets encrypted via otto-osss vault
 - All crypto via otto-crypto
 - Complete audit trail
@@ -127,7 +137,7 @@ Kickoff completed:
 ## 🛣️ 6-Week Roadmap at a Glance
 
 | Week | Phase | Work | Days |
-|------|-------|------|------|
+| ------ | ------- | ------ | ------ |
 | 1-2 | 1 | Remove otto-update duplicates | 18-22 |
 | 2-3 | 2b | Integrate otto-crypto via FFI | 10-12 |
 | 3-4 | 2 | Integrate otto-osss via FFI | 12-15 |
@@ -142,6 +152,7 @@ Kickoff completed:
 ## ⚠️ Key Blockers
 
 ### Need to Research (Do This First!)
+
 1. **otto-crypto FFI/Node.js bindings**
    - Status: Unknown if they exist
    - Blocks: Phase 2b (encryption)
@@ -162,21 +173,25 @@ Kickoff completed:
 ## 📋 Recommended Reading Order
 
 **First Time?**
+
 1. This file (navigation hub)
 2. [ROADMAP.md](ROADMAP.md) - Executive summary + phases
 3. [HANDOFF.md](HANDOFF.md) - Current status and progress
 
 **Resuming After Context Loss?**
+
 1. [HANDOFF.md](HANDOFF.md) - See where we left off
 2. [ROADMAP.md](ROADMAP.md) - Refresh on phases and timeline
 3. Specific phase documentation as needed
 
 **For Security Review?**
+
 1. [ROADMAP.md](ROADMAP.md) - "Security Success" section
 2. [FUNCTIONAL_DRY_AUDIT.md](FUNCTIONAL_DRY_AUDIT.md) - Violation details
 3. This file's "Security Status" section
 
 **For Team Standup?**
+
 1. [HANDOFF.md](HANDOFF.md) - "Progress Summary" table
 2. This file's "Current Status" section
 3. [HANDOFF.md](HANDOFF.md) - "Blockers & Research Items"
@@ -186,6 +201,7 @@ Kickoff completed:
 ## 🔗 Related Repositories (Git Submodules)
 
 All now accessible at `external/otto/<repo>/`:
+
 - `otto-update` - Update engine (Phase 1 dependency)
 - `otto-osss` - State vault (Phase 2 dependency)
 - `otto-crypto` - Cryptography (Phase 2b dependency)
@@ -219,6 +235,7 @@ All now accessible at `external/otto/<repo>/`:
 ## 🔄 How to Update This Document
 
 When resuming work:
+
 1. Check current status in HANDOFF.md
 2. Update HANDOFF.md with new milestone progress
 3. Keep ROADMAP.md as-is (reference document)

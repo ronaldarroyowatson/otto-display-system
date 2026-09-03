@@ -25,11 +25,31 @@ otto-display-system-full-export/
 # Local runtime/generated content snapshots
 content/
 orchestrator.settings.json
+logs/debug/last-run.json
+
+# Generated build and dependency output inside nested Otto repos
+external/otto/**/node_modules/
+external/otto/**/dist/
+external/otto/**/coverage/
+external/otto/**/.ignored/
+external/otto/**/content/
 
 # Local scratch test files
 test-ui-*.mjs
 tmp-*.mjs
 test-*.mjs
+
+# Local sync, audit, and scratch documentation that should not be public
+DRY_AUDIT_*.md
+FUNCTIONAL_DRY_AUDIT.md
+EXECUTE_GIT_SYNC.md
+GIT_SYNC_INSTRUCTIONS.md
+PROVIDER_INTEGRATION_SUMMARY.md
+check-status.sh
+sync-all-repos.ps1
+sync-repos.bat
+sync-repos.mjs
+sync-repos.sh
 
 # SECURITY: Local secrets and credentials (MUST NOT be committed)
 # OAuth credentials, tokens, and sensitive configuration
