@@ -12,6 +12,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CalendarConnectorCore } from "./calendar-core.js";
 
 const EXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROVIDER_CONFIG_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider-config.json");
@@ -21,13 +22,21 @@ const PROVIDER_TOKENS_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider
 let configStateManager = null;
 let tokensStateManager = null;
 
+function getRuntimeStateManager() {
+  if (typeof globalThis !== "undefined" && globalThis.StateManager) {
+    return globalThis.StateManager;
+  }
+  return null;
+}
+
 function initStateManagers() {
-  if (!StateManager) return;
+  const StateManagerCtor = getRuntimeStateManager();
+  if (!StateManagerCtor) return;
   if (!configStateManager) {
-    configStateManager = new StateManager(PROVIDER_CONFIG_PATH, "1.0.0");
+    configStateManager = new StateManagerCtor(PROVIDER_CONFIG_PATH, "1.0.0");
   }
   if (!tokensStateManager) {
-    tokensStateManager = new StateManager(PROVIDER_TOKENS_PATH, "1.0.0");
+    tokensStateManager = new StateManagerCtor(PROVIDER_TOKENS_PATH, "1.0.0");
   }
 }
 
@@ -67,7 +76,7 @@ async function loadProviderStore() {
   
   try {
     // Try OSSS first if available
-    if (StateManager && configStateManager) {
+    if (getRuntimeStateManager() && configStateManager) {
       const osssData = await configStateManager.load();
       const providers = Array.isArray(osssData?.providers) ? osssData.providers : [];
       for (const entry of providers) {
@@ -139,7 +148,7 @@ async function saveProviderStore(store) {
   };
   
   // Try OSSS first if available
-  if (StateManager && configStateManager) {
+  if (getRuntimeStateManager() && configStateManager) {
     await configStateManager.save(payload);
     return;
   }
@@ -163,7 +172,7 @@ async function loadProviderTokens() {
   
   try {
     // Try OSSS first if available
-    if (StateManager && tokensStateManager) {
+    if (getRuntimeStateManager() && tokensStateManager) {
       const osssData = await tokensStateManager.load();
       const providerTokens = osssData?.providers || {};
       for (const [providerId, data] of Object.entries(providerTokens)) {
@@ -207,7 +216,7 @@ async function saveProviderTokens(tokens) {
   };
   
   // Try OSSS first if available
-  if (StateManager && tokensStateManager) {
+  if (getRuntimeStateManager() && tokensStateManager) {
     await tokensStateManager.save(payload);
     return;
   }
@@ -380,17 +389,102 @@ async function getAccessToken(providerId) {
   return token.accessToken;
 }
 
+/**
+ * Get a lazy-loaded reference to executeCommand from command-service
+ * Uses lazy loading to avoid circular dependency issues
+ */
+let executeCommandCache = null;
+
+async function getExecuteCommand() {
+  if (!executeCommandCache) {
+    try {
+      const module = await import("../../../otto-command-service/src/index.ts");
+      executeCommandCache = module.executeCommand;
+    } catch {
+      // If import fails, return null so we can handle gracefully
+      return null;
+    }
+  }
+  return executeCommandCache;
+}
+
+/**
+ * Create a TokenProvider that delegates to auth commands via executeCommand
+ */
+async function createTokenProvider() {
+  const executeCommand = await getExecuteCommand();
+  
+  if (!executeCommand) {
+    // Fallback provider that returns null tokens
+    return {
+      async getToken(providerId) {
+        return null;
+      },
+      async getUser(providerId) {
+        return null;
+      }
+    };
+  }
+
+  return {
+    async getToken(providerId) {
+      try {
+        const result = await executeCommand("auth.get.token", { providerId });
+        return result?.value || null;
+      } catch {
+        return null;
+      }
+    },
+    async getUser(providerId) {
+      try {
+        const result = await executeCommand("auth.get.user", { providerId });
+        return result ? { email: result.email, name: result.name } : null;
+      } catch {
+        return null;
+      }
+    }
+  };
+}
+
+let calendarCoreInstance = null;
+
+async function getCalendarCore() {
+  if (!calendarCoreInstance) {
+    const tokenProvider = await createTokenProvider();
+    calendarCoreInstance = new CalendarConnectorCore(tokenProvider);
+  }
+  return calendarCoreInstance;
+}
+
 export async function executeCalendarCommand(commandName, input = {}) {
+  const core = await getCalendarCore();
+  
   switch (commandName) {
     case "calendar.get.provider.config":
       return getProviderConfig(input.providerId);
     case "calendar.set.provider.config":
       return setProviderConfig(input.providerId, input.clientId, input.clientSecret);
     case "calendar.list.events":
-      return [];
+      try {
+        return await core.listEvents({
+          providerId: input.providerId || "microsoft",
+          startDate: input.startDate || new Date().toISOString().split("T")[0],
+          endDate: input.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          includeRaw: input.includeRaw ?? false
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to list calendar events: ${message}`);
+      }
     case "calendar.sync":
-      return { providers: [], totalEventCount: 0, generatedAt: new Date().toISOString() };
+      try {
+        return await core.syncProviders({ providerId: input.providerId });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to sync calendar providers: ${message}`);
+      }
     default:
       throw new Error(`Unknown calendar command: ${commandName}`);
   }
 }
+
