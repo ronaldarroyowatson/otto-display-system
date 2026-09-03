@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { mergeDesignThemeConfig } from './display-config-merge.mjs';
 import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
 import { discoverExtensionDependencyGraph, discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
+import { initializeSelfHealing } from './self-healing-init.mjs';
 
 const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
 const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
@@ -143,6 +144,9 @@ async function readDisplayControlContract() {
 const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
 const dependencyGraph = await discoverExtensionDependencyGraph(ROOT);
 const requiredExtensions = await discoverRequiredExtensions(ROOT);
+
+// Initialize self-healing framework for critical display-system artifacts
+initializeSelfHealing();
 
 await executeRoutedCommand('file.rotate.logs', {
   directory: path.join(ROOT, 'logs'),
