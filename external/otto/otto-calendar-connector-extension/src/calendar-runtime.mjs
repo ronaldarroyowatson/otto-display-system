@@ -464,6 +464,11 @@ export async function executeCalendarCommand(commandName, input = {}) {
       return getProviderConfig(input.providerId);
     case "calendar.set.provider.config":
       return setProviderConfig(input.providerId, input.clientId, input.clientSecret);
+      case "calendar.get.provider.tokens":
+        return await loadProviderTokens();
+      case "calendar.set.provider.tokens":
+        await saveProviderTokens(input.tokens || {});
+        return { success: true, message: "Tokens saved" };
     case "calendar.list.events":
       try {
         return await core.listEvents({

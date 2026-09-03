@@ -728,6 +728,87 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === 'GET' && url.pathname === '/oauth/callback') {
+      try {
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        const provider = url.searchParams.get('provider');
+
+        if (!code || !provider) {
+          sendJson(response, 400, { error: 'Missing code or provider query parameter' });
+          return;
+        }
+
+        // Get provider configuration (clientId, clientSecret)
+        const configResult = await executeRoutedCommand('calendar.get.provider.config', {
+          providerId: provider
+        });
+
+        const providerConfig = Array.isArray(configResult.value) && configResult.value[0]
+          ? configResult.value[0]
+          : configResult;
+
+        if (!providerConfig.isConfigured || !providerConfig.clientId || !providerConfig.clientSecret) {
+          sendJson(response, 400, { error: 'Provider not configured with OAuth credentials' });
+          return;
+        }
+
+        // Determine redirect URI based on request origin
+        const redirectUri = `${url.protocol}//${url.host}/oauth/callback?provider=${encodeURIComponent(provider)}`;
+
+        // Exchange authorization code for token
+        const exchangeResult = await executeRoutedCommand('oauth.exchange.token', {
+          providerId: provider,
+          clientId: providerConfig.clientId,
+          clientSecret: providerConfig.clientSecret,
+          authorizationCode: code,
+          redirectUri: redirectUri
+        });
+
+        if (!exchangeResult.token) {
+          sendJson(response, 400, { error: 'Failed to exchange authorization code for token' });
+          return;
+        }
+
+        // Save token to calendar provider tokens store
+        const currentTokens = await executeRoutedCommand('calendar.get.provider.tokens', {
+          providerId: provider
+        });
+
+        const updatedTokens = {
+          ...currentTokens,
+          [provider]: {
+            accessToken: exchangeResult.token.value,
+            expiresAt: exchangeResult.token.expiresAt,
+            refreshToken: exchangeResult.token.refreshToken || null
+          }
+        };
+
+        // Persist tokens (this will be handled by calendar-runtime internally)
+        // For now, return the success response
+          await executeRoutedCommand('calendar.set.provider.tokens', {
+            tokens: updatedTokens
+          });
+
+          await traceApi(request.method, url.pathname, 200, `OAuth callback success for ${provider}`);
+        sendJson(response, 200, {
+          success: true,
+          message: `Successfully authenticated with ${provider}`,
+          user: exchangeResult.user,
+          provider: provider,
+          state: state
+        });
+        return;
+      } catch (error) {
+        await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'OAuth callback failed');
+        sendJson(response, 400, {
+          error: 'OAuth callback failed',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+        return;
+      }
+    }
+
     await serveStatic(response, url.pathname);
   } catch (error) {
     const method = request.method ?? 'UNKNOWN';
