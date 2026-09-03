@@ -59,7 +59,8 @@ foreach ($folderName in @(
   "external/otto/otto-display-control-system",
   "external/otto/otto-design-system-dev-ui",
   "external/otto/otto-display-orchestrator",
-  "external/otto/otto-extensions"
+  "external/otto/otto-extensions",
+  "external/otto/otto-update"
 )) {
   $sourceFolder = Join-Path $root $folderName
   $destinationFolder = Join-Path $payloadRoot $folderName
