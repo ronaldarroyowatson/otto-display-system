@@ -792,64 +792,78 @@ const server = http.createServer(async (request, response) => {
           }
         };
 
-        // Persist tokens (this will be handled by calendar-runtime internally)
-        // For now, return the success response
-          await executeRoutedCommand('calendar.set.provider.tokens', {
-            tokens: updatedTokens
-          });
-
-          await traceApi(request.method, url.pathname, 200, `OAuth callback success for ${provider}`);
-        sendJson(response, 200, {
-          success: true,
-          message: `Successfully authenticated with ${provider}`,
-          user: exchangeResult.user,
-          provider: provider,
-          state: state
+        await executeRoutedCommand('calendar.set.provider.tokens', {
+          tokens: updatedTokens
         });
+
+        const successHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Authentication Complete</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body style="font-family: sans-serif; padding: 20px; line-height: 1.5;">
+  <h1 style="color: #1b7f3a; margin-top: 0;">Authentication successful</h1>
+  <p>${escapeHtml(provider)} account connected.</p>
+  <p>You can close this window.</p>
+  <script>
+    try {
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'OTTO_OAUTH_CALLBACK',
+          provider: ${JSON.stringify(provider)},
+          status: 'success',
+          state: ${JSON.stringify(state)},
+          user: ${JSON.stringify(exchangeResult.user || null)}
+        }, '*');
+      }
+    } catch {}
+    setTimeout(() => window.close(), 800);
+  </script>
+</body>
+</html>`;
+
+        await traceApi(request.method, url.pathname, 200, `OAuth callback success for ${provider}`);
+        response.statusCode = 200;
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.end(successHtml);
         return;
       } catch (error) {
-        await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'OAuth callback failed');
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          await traceApi(request.method, url.pathname, 400, errorMessage);
-        
-          const errorHtml = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>OAuth Authentication Error</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
-      body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
-      .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-      .error { color: #c0392b; }
-      .details { background: #ffe6e6; padding: 1rem; border-radius: 4px; margin: 1rem 0; font-family: monospace; font-size: 0.9rem; word-break: break-word; }
-      button { background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-      button:hover { background: #0056b3; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="error">✗ Authentication Failed</h1>
-      <p>An error occurred during OAuth authentication:</p>
-      <div class="details">${escapeHtml(errorMessage)}</div>
-      <p>Please try again or check your OAuth credentials.</p>
-      <button type="button" onclick="window.close()">Close Window</button>
-    </div>
-    <script>
-      // Notify parent window of failure
+        const errorMessage = error instanceof Error ? error.message : 'OAuth callback failed';
+        await traceApi(request.method, url.pathname, 400, errorMessage);
+
+        const errorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Authentication Error</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body style="font-family: sans-serif; padding: 20px; line-height: 1.5;">
+  <h1 style="color: #b42318; margin-top: 0;">Authentication failed</h1>
+  <p>${escapeHtml(errorMessage)}</p>
+  <p>You can close this window and try again.</p>
+  <script>
+    try {
+      const provider = ${JSON.stringify(url.searchParams.get('provider') || '')};
       if (window.opener) {
-        window.opener.sessionStorage?.removeItem('oauth_callback_${provider}');
+        window.opener.postMessage({
+          type: 'OTTO_OAUTH_CALLBACK',
+          provider,
+          status: 'error',
+          error: ${JSON.stringify(errorMessage)}
+        }, '*');
       }
-    </script>
-  </body>
-  </html>
-  `;
+    } catch {}
+  </script>
+</body>
+</html>`;
+
+        response.statusCode = 400;
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.end(errorHtml);
         return;
-          response.statusCode = 400;
-          response.setHeader('Content-Type', 'text/html; charset=utf-8');
-          response.end(errorHtml);
-          return;
       }
     }
 
