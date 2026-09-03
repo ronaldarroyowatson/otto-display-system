@@ -28,6 +28,8 @@ orchestrator.settings.json
 
 # Local scratch test files
 test-ui-*.mjs
+tmp-*.mjs
+test-*.mjs
 
 # SECURITY: Local secrets and credentials (MUST NOT be committed)
 # OAuth credentials, tokens, and sensitive configuration
