@@ -215,6 +215,14 @@ function queryParamsToPayload(searchParams) {
   return payload;
 }
 
+function escapeHtml(text) {
+  return String(text || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 async function readOrchestratorSettings() {
   try {
     return await executeRoutedCommand('orchestrator.settings.get');
@@ -801,11 +809,47 @@ const server = http.createServer(async (request, response) => {
         return;
       } catch (error) {
         await traceApi(request.method, url.pathname, 400, error instanceof Error ? error.message : 'OAuth callback failed');
-        sendJson(response, 400, {
-          error: 'OAuth callback failed',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        });
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          await traceApi(request.method, url.pathname, 400, errorMessage);
+        
+          const errorHtml = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>OAuth Authentication Error</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
+      .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+      .error { color: #c0392b; }
+      .details { background: #ffe6e6; padding: 1rem; border-radius: 4px; margin: 1rem 0; font-family: monospace; font-size: 0.9rem; word-break: break-word; }
+      button { background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+      button:hover { background: #0056b3; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="error">✗ Authentication Failed</h1>
+      <p>An error occurred during OAuth authentication:</p>
+      <div class="details">${escapeHtml(errorMessage)}</div>
+      <p>Please try again or check your OAuth credentials.</p>
+      <button type="button" onclick="window.close()">Close Window</button>
+    </div>
+    <script>
+      // Notify parent window of failure
+      if (window.opener) {
+        window.opener.sessionStorage?.removeItem('oauth_callback_${provider}');
+      }
+    </script>
+  </body>
+  </html>
+  `;
         return;
+          response.statusCode = 400;
+          response.setHeader('Content-Type', 'text/html; charset=utf-8');
+          response.end(errorHtml);
+          return;
       }
     }
 
