@@ -108,6 +108,7 @@ LEGACY_BASE_URL="${OTTO_LEGACY_UPDATE_BASE_URL:-${OTTO_UPDATE_BASE_URL:-http://1
 LEGACY_MANIFEST_URL="${OTTO_UPDATE_MANIFEST_URL:-${LEGACY_BASE_URL}/manifest.json}"
 LEGACY_PACKAGE_URL="${OTTO_UPDATE_PACKAGE_URL:-${LEGACY_BASE_URL}/otto-display-system-latest.zip}"
 VERSION_FILE="${INSTALL_ROOT}/installed-version.txt"
+AUTO_REPAIR_SCRIPTS="${OTTO_AUTO_REPAIR_SCRIPTS:-true}"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is required to run command-service update commands."
@@ -163,6 +164,12 @@ legacy_update_fallback() {
   echo "Fallback update applied${remote_version:+ to version ${remote_version}}."
 }
 
+extract_json_field() {
+  local payload="$1"
+  local field_name="$2"
+  node -e 'const input = process.argv[1]; const field = process.argv[2]; try { const parsed = JSON.parse(input); const value = parsed?.[field]; if (value !== undefined && value !== null) { process.stdout.write(String(value)); } } catch { process.exit(1); }' "$payload" "$field_name"
+}
+
 echo "Checking OttoUpdate health..."
 if ! run_command "update.health" >/dev/null 2>&1; then
   legacy_update_fallback
@@ -170,14 +177,26 @@ if ! run_command "update.health" >/dev/null 2>&1; then
 fi
 
 echo "Validating install integrity and dependency health..."
-run_command "update.validate.install" >/dev/null
+preflight_result="$(run_command "update.validate.install" 2>/dev/null || true)"
+
+# Check if auto-update.sh needs repair
+if [ "${AUTO_REPAIR_SCRIPTS}" = "true" ] && echo "${preflight_result}" | grep -q '"stale_auto_update_script"'; then
+  echo "Detected stale auto-update.sh script. Attempting self-repair..."
+  if run_command "update.repair.auto-update-script" >/dev/null 2>&1; then
+    echo "Auto-update.sh successfully repaired. Restarting update flow..."
+    # Re-execute this script to use the repaired version
+    exec "$0" "$@"
+  else
+    echo "Warning: Failed to repair auto-update.sh, continuing anyway..."
+  fi
+fi
 
 echo "Triggering update.check through command-service..."
 check_result="$(run_command "update.check")"
 echo "update.check => ${check_result}"
 
 if [ "${AUTO_APPROVE_UPDATES}" = "true" ]; then
-  check_id="$(node -e 'const input = process.argv[1]; try { const parsed = JSON.parse(input); if (parsed?.check_id) process.stdout.write(String(parsed.check_id)); } catch {}' "${check_result}")"
+  check_id="$(extract_json_field "${check_result}" "check_id" 2>/dev/null || true)"
   if [ -n "${check_id}" ]; then
     echo "Auto-approving check ${check_id}"
     approve_result="$(run_command "update.approve" "check_id=${check_id}")"

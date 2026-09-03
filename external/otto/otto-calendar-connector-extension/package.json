@@ -4,6 +4,7 @@
   "private": false,
   "type": "module",
   "scripts": {
+    "build": "tsc --project tsconfig.json",
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

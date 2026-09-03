@@ -96,7 +96,7 @@ export class GoogleCalendarClient {
       recurrenceRule: event.recurrence?.join("\n"),
       categories: event.categories,
       isBusy: event.transparency === "opaque",
-      raw: event
+      raw: event as unknown as Record<string, unknown>
     };
   }
 }

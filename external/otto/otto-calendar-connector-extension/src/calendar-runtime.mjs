@@ -12,7 +12,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CalendarConnectorCore } from "./calendar-core.ts";
+import { CalendarConnectorCore } from "../dist/calendar-core.js";
 
 const EXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROVIDER_CONFIG_PATH = path.join(EXT_ROOT, "mempalace", "calendar-provider-config.json");

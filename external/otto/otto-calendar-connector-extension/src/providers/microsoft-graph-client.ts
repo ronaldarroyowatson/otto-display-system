@@ -3,7 +3,7 @@
  * Retrieves and normalizes events from Microsoft Outlook/Exchange via Graph API.
  */
 
-import { CalendarEvent } from "./calendar-schema.js";
+import { CalendarEvent } from "../calendar-schema.js";
 
 export interface MicrosoftGraphEvent {
   id: string;
@@ -109,7 +109,7 @@ export class MicrosoftGraphCalendarClient {
       recurrenceRule: this.buildRRule(event.recurrence),
       categories: event.categories,
       isBusy: event.showAs === "busy" || event.showAs === "oof",
-      raw: event
+      raw: event as unknown as Record<string, unknown>
     };
   }
 

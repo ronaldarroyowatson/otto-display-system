@@ -112,3 +112,4 @@ if [ -n "${progress_result}" ]; then
 fi
 
 echo "Update check flow completed through command-service."
+
