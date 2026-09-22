@@ -53,12 +53,16 @@ foreach ($folderName in @(
   "external/otto/otto-schedule-resolver-extension",
   "external/otto/otto-debug-extension",
   "external/otto/otto-calendar-connector-extension",
+  "external/otto/otto-server",
   "external/otto/otto-kernel",
   "external/otto/otto-file-extension",
   "external/otto/otto-extension-index",
   "external/otto/otto-display-control-system",
   "external/otto/otto-design-system-dev-ui",
   "external/otto/otto-display-orchestrator",
+  "external/otto/otto-edge-profile-extension",
+  "external/otto/otto-tls-automation-extension",
+  "external/otto/otto-edge-service-extension",
   "external/otto/otto-extensions",
   "external/otto/otto-update"
 )) {
@@ -71,6 +75,10 @@ foreach ($folderName in @(
   }
 }
 Copy-Item (Join-Path $root "module-loader.config.json") (Join-Path $payloadRoot "module-loader.config.json") -Force
+Copy-Item (Join-Path $root "package.json") (Join-Path $payloadRoot "package.json") -Force
+Copy-Item (Join-Path $root "pnpm-workspace.yaml") (Join-Path $payloadRoot "pnpm-workspace.yaml") -Force
+Copy-Item (Join-Path $root "pnpm-lock.yaml") (Join-Path $payloadRoot "pnpm-lock.yaml") -Force
+Copy-Item (Join-Path $root "tsconfig.base.json") (Join-Path $payloadRoot "tsconfig.base.json") -Force
 if (Test-Path (Join-Path $root "design-system.config.json")) {
   Copy-Item (Join-Path $root "design-system.config.json") (Join-Path $payloadRoot "design-system.config.json") -Force
 }

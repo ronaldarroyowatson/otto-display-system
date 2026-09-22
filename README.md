@@ -65,7 +65,15 @@ and design system.
 - OTTO_UPDATE_ARCHIVE_URL: overrides rollback archive URL
   (default: ${OTTO_UPDATE_BASE_URL}/archives)
 - OTTO_FRONTEND_URL: overrides kiosk frontend URL written to pisignage.json
-  (default: http://<pi-host>:8080/display)
+  (default: https://<hostname>.local:8080/display)
+- OTTO_FRONTEND_HOST: overrides the hostname used when OTTO_FRONTEND_URL is not set
+  (default: <hostname>.local)
+- OTTO_FRONTEND_SCHEME: overrides the frontend URL scheme when OTTO_FRONTEND_URL is not set
+  (default: https)
+- OTTO_FRONTEND_PORT: overrides the frontend URL port when OTTO_FRONTEND_URL is not set
+  (default: 8080)
+- OTTO_FRONTEND_PATH: overrides the frontend URL path when OTTO_FRONTEND_URL is not set
+  (default: /display)
 
 ### Installation Paths
 

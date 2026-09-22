@@ -1,15 +1,19 @@
 import fs from 'node:fs/promises';
-import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { createNodeServer } from '../../../external/otto/otto-server/dist/index.js';
 import { mergeDesignThemeConfig } from './display-config-merge.mjs';
 import { executeRoutedCommand } from '../../runtime-shared/src/command-executor.mjs';
 import { discoverExtensionDependencyGraph, discoverModules, discoverRequiredExtensions } from '../../runtime-shared/src/module-discovery.mjs';
 import { initializeSelfHealing } from './self-healing-init.mjs';
+import { bootstrapDisplayCertificateLifecycle } from './lib/device-certificate.mjs';
 
-const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 4180);
-const HOST = process.env.OTTO_DISPLAY_HOST ?? '127.0.0.1';
+const PORT = Number(process.env.OTTO_DISPLAY_PORT ?? 8080);
+const HOST = process.env.OTTO_DISPLAY_HOST ?? '0.0.0.0';
+const HTTPS_KEY_PATH = process.env.OTTO_HTTPS_KEY_PATH;
+const HTTPS_CERT_PATH = process.env.OTTO_HTTPS_CERT_PATH;
+const HTTPS_CA_PATH = process.env.OTTO_HTTPS_CA_PATH;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FRONTEND_DIR = path.join(ROOT, 'modules', 'display-frontend', 'public');
 const DEV_UI_DIR = path.join(ROOT, 'external', 'otto', 'otto-design-system-dev-ui', 'src');
@@ -145,6 +149,20 @@ const discoveredModules = await discoverModules(ROOT, MODULE_LOADER_CONFIG);
 const dependencyGraph = await discoverExtensionDependencyGraph(ROOT);
 const requiredExtensions = await discoverRequiredExtensions(ROOT);
 
+try {
+  const edgeProfile = await executeRoutedCommand('edge.profile.resolve', {
+    host: process.env.OTTO_FRONTEND_HOST ?? HOST,
+    port: PORT,
+    path: '/display',
+    oauthPath: '/oauth/callback',
+    forceHttps: Boolean(HTTPS_KEY_PATH && HTTPS_CERT_PATH)
+  });
+  console.log(`edge-profile-ready ${edgeProfile.origin}`);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`edge-profile-resolve-failed ${message}`);
+}
+
 // Initialize self-healing framework for critical display-system artifacts
 initializeSelfHealing();
 
@@ -154,6 +172,19 @@ await executeRoutedCommand('file.rotate.logs', {
   maxBytes: 4_000_000,
   activeLogFile: path.join(ROOT, 'logs', 'display-runtime.log')
 });
+
+try {
+  const certificateBootstrap = await bootstrapDisplayCertificateLifecycle({
+    executeRoutedCommand,
+    rootPath: ROOT,
+    subject: process.env.OTTO_DEVICE_CERT_SUBJECT,
+    rotationPollMs: process.env.OTTO_DEVICE_CERT_ROTATION_POLL_MS
+  });
+  console.log(`display-certificate-ready ${certificateBootstrap.subject} id=${certificateBootstrap.certificateId}`);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`display-certificate-bootstrap-failed ${message}`);
+}
 
 async function traceApi(method, route, statusCode, details) {
   try {
@@ -364,13 +395,25 @@ async function serveDevUiStatic(response, reqPath) {
   }
 }
 
-const server = http.createServer(async (request, response) => {
-  try {
-    if (!request.url) {
-      response.statusCode = 400;
-      response.end('Bad Request');
-      return;
+const httpsConfig = HTTPS_KEY_PATH && HTTPS_CERT_PATH
+  ? {
+      keyPath: HTTPS_KEY_PATH,
+      certPath: HTTPS_CERT_PATH,
+      caPath: HTTPS_CA_PATH
     }
+  : undefined;
+
+const server = await createNodeServer({
+  host: HOST,
+  port: PORT,
+  https: httpsConfig,
+  requestListener: async (request, response) => {
+    try {
+      if (!request.url) {
+        response.statusCode = 400;
+        response.end('Bad Request');
+        return;
+      }
 
     const url = new URL(request.url, `http://${HOST}:${PORT}`);
 
@@ -744,16 +787,21 @@ const server = http.createServer(async (request, response) => {
       try {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
-        const provider = url.searchParams.get('provider');
+        const providerFromQuery = url.searchParams.get('provider');
+        const providerFromState = typeof state === 'string' && state.includes(':')
+          ? state.split(':', 1)[0]
+          : null;
+        const provider = providerFromQuery || providerFromState;
 
-        if (!code || !provider) {
+        if (!code || !provider || !['microsoft', 'google'].includes(provider)) {
           sendJson(response, 400, { error: 'Missing code or provider query parameter' });
           return;
         }
 
         // Get provider configuration (clientId, clientSecret)
         const configResult = await executeRoutedCommand('calendar.get.provider.config', {
-          providerId: provider
+          providerId: provider,
+          includeSecrets: true
         });
 
         const providerConfig = Array.isArray(configResult.value) && configResult.value[0]
@@ -766,13 +814,14 @@ const server = http.createServer(async (request, response) => {
         }
 
         // Determine redirect URI based on request origin
-        const redirectUri = `${url.protocol}//${url.host}/oauth/callback?provider=${encodeURIComponent(provider)}`;
+        const redirectUri = `${url.protocol}//${url.host}/oauth/callback`;
 
         // Exchange authorization code for token
         const exchangeResult = await executeRoutedCommand('oauth.exchange.token', {
           providerId: provider,
           clientId: providerConfig.clientId,
           clientSecret: providerConfig.clientSecret,
+          microsoftAuthority: providerConfig.microsoftAuthority,
           authorizationCode: code,
           redirectUri: redirectUri
         });
@@ -889,11 +938,13 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    response.end();
+      response.end();
+    }
   }
 });
 
+const protocol = httpsConfig ? 'https' : 'http';
 server.listen(PORT, HOST, () => {
-  console.log(`display-runtime-ready http://${HOST}:${PORT} modules=${discoveredModules.moduleCount}`);
+  console.log(`display-runtime-ready ${protocol}://${HOST}:${PORT} modules=${discoveredModules.moduleCount}`);
 });
 

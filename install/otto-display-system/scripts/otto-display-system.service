@@ -9,6 +9,9 @@ WorkingDirectory=/opt/otto-display-system/current
 Environment=OTTO_DISPLAY_HOST=0.0.0.0
 Environment=OTTO_DISPLAY_PORT=8080
 Environment=NODE_ENV=production
+Environment=OTTO_HTTPS_KEY_PATH=/etc/ssl/otto/otto-display.key
+Environment=OTTO_HTTPS_CERT_PATH=/etc/ssl/otto/otto-display.crt
+Environment=OTTO_HTTPS_CA_PATH=/etc/ssl/otto/otto-display-ca.crt
 ExecStart=/usr/bin/env node apps/display-runtime/src/server.mjs
 Restart=on-failure
 RestartSec=5
@@ -16,7 +19,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=full
-ReadWritePaths=/opt/otto-display-system /var/log/otto-display-system
+ReadWritePaths=/opt/otto-display-system /var/log/otto-display-system /etc/ssl/otto
 LogsDirectory=otto-display-system
 
 [Install]

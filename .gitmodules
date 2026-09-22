@@ -73,3 +73,12 @@
 [submodule "external/otto/otto-api-gateway-factory-extension"]
 	path = external/otto/otto-api-gateway-factory-extension
 	url = https://github.com/otto-extensions/otto-api-gateway-factory-extension.git
+[submodule "external/otto/otto-edge-profile-extension"]
+	path = external/otto/otto-edge-profile-extension
+	url = https://github.com/ronaldarroyowatson/otto-edge-profile-extension.git
+[submodule "external/otto/otto-tls-automation-extension"]
+	path = external/otto/otto-tls-automation-extension
+	url = https://github.com/ronaldarroyowatson/otto-tls-automation-extension.git
+[submodule "external/otto/otto-edge-service-extension"]
+	path = external/otto/otto-edge-service-extension
+	url = https://github.com/ronaldarroyowatson/otto-edge-service-extension.git
