@@ -8,6 +8,8 @@ CURRENT_DIR="${INSTALL_ROOT}/current"
 BACKUP_DIR="${INSTALL_ROOT}/backups"
 PKG_URL="$SERVER_URL/otto-display-system-latest.zip"
 CORE_URL="$SERVER_URL/otto-core-latest.tgz"
+ALLOW_OFFLINE_FALLBACK="${OTTO_ALLOW_OFFLINE_FALLBACK:-true}"
+LOCAL_PACKAGE_PATH="${OTTO_LOCAL_PACKAGE_PATH:-}"
 PI_HOSTNAME="$(hostname -s 2>/dev/null || hostname 2>/dev/null || echo otto-display)"
 FRONTEND_HOST="${OTTO_FRONTEND_HOST:-${PI_HOSTNAME}.local}"
 FRONTEND_SCHEME="${OTTO_FRONTEND_SCHEME:-https}"
@@ -88,12 +90,38 @@ if [ -f "${INSTALL_ROOT}/otto-display-system.zip" ]; then
   mv "${INSTALL_ROOT}/otto-display-system.zip" "${BACKUP_DIR}/otto-display-system-${timestamp}.zip"
 fi
 
+FALLBACK_PACKAGE_PATH=""
+if [ -n "$LOCAL_PACKAGE_PATH" ] && [ -f "$LOCAL_PACKAGE_PATH" ]; then
+  FALLBACK_PACKAGE_PATH="$LOCAL_PACKAGE_PATH"
+elif [ -f "${BACKUP_DIR}/otto-display-system-${timestamp}.zip" ]; then
+  FALLBACK_PACKAGE_PATH="${BACKUP_DIR}/otto-display-system-${timestamp}.zip"
+else
+  latest_backup="$(ls -1t "${BACKUP_DIR}"/otto-display-system-*.zip 2>/dev/null | head -n 1 || true)"
+  if [ -n "$latest_backup" ] && [ -f "$latest_backup" ]; then
+    FALLBACK_PACKAGE_PATH="$latest_backup"
+  fi
+fi
+
 if curl -fsSL "$CORE_URL" -o "${INSTALL_ROOT}/otto-core-latest.tgz"; then
   echo "Downloaded optional core package from $CORE_URL"
 else
   echo "Optional core package not found at $CORE_URL; continuing without it."
 fi
-curl -fsSL "$PKG_URL" -o "${INSTALL_ROOT}/otto-display-system.zip"
+
+if curl -fsSL "$PKG_URL" -o "${INSTALL_ROOT}/otto-display-system.zip"; then
+  echo "Downloaded package from $PKG_URL"
+else
+  if [ "$ALLOW_OFFLINE_FALLBACK" = "true" ] && [ -n "$FALLBACK_PACKAGE_PATH" ] && [ -f "$FALLBACK_PACKAGE_PATH" ]; then
+    echo "Package download failed from $PKG_URL"
+    echo "Using local fallback package: $FALLBACK_PACKAGE_PATH"
+    cp "$FALLBACK_PACKAGE_PATH" "${INSTALL_ROOT}/otto-display-system.zip"
+  else
+    echo "Package download failed from $PKG_URL and no fallback package is available."
+    echo "Set OTTO_LOCAL_PACKAGE_PATH to a local zip or ensure update host is reachable."
+    exit 1
+  fi
+fi
+
 rm -rf "$CURRENT_DIR"
 mkdir -p "$CURRENT_DIR"
 unzip -o "${INSTALL_ROOT}/otto-display-system.zip" -d "$CURRENT_DIR"
