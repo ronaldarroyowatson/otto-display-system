@@ -14,11 +14,26 @@ FRONTEND_SCHEME="${OTTO_FRONTEND_SCHEME:-https}"
 FRONTEND_PORT="${OTTO_FRONTEND_PORT:-8080}"
 FRONTEND_PATH="${OTTO_FRONTEND_PATH:-/display}"
 FRONTEND_URL="${OTTO_FRONTEND_URL:-${FRONTEND_SCHEME}://${FRONTEND_HOST}:${FRONTEND_PORT}${FRONTEND_PATH}}"
+
+# If a full frontend URL is explicitly provided, align FRONTEND_HOST to that URL.
+# This keeps the generated certificate SAN entries in sync with the actual URL
+# used by PiSignage players.
+if [ -n "${OTTO_FRONTEND_URL:-}" ]; then
+  EXPLICIT_FRONTEND_HOST="$(printf '%s' "$OTTO_FRONTEND_URL" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://([^/:]+).*$#\1#')"
+  if [ -n "$EXPLICIT_FRONTEND_HOST" ] && [ "$EXPLICIT_FRONTEND_HOST" != "$OTTO_FRONTEND_URL" ]; then
+    FRONTEND_HOST="$EXPLICIT_FRONTEND_HOST"
+  fi
+fi
+
 WEB_ROOT="/var/www/otto-display"
 HTTPS_DIR="/etc/ssl/otto"
+HTTPS_CERT_BASE_NAME="${OTTO_HTTPS_CERT_BASENAME:-otto-display}"
 HTTPS_KEY_PATH="${OTTO_HTTPS_KEY_PATH:-${HTTPS_DIR}/otto-display.key}"
 HTTPS_CERT_PATH="${OTTO_HTTPS_CERT_PATH:-${HTTPS_DIR}/otto-display.crt}"
 HTTPS_CA_PATH="${OTTO_HTTPS_CA_PATH:-${HTTPS_DIR}/otto-display-ca.crt}"
+HTTPS_CA_KEY_PATH="${OTTO_HTTPS_CA_KEY_PATH:-${HTTPS_DIR}/${HTTPS_CERT_BASE_NAME}-ca.key}"
+HTTPS_CA_SERIAL_PATH="${OTTO_HTTPS_CA_SERIAL_PATH:-${HTTPS_DIR}/${HTTPS_CERT_BASE_NAME}-ca.srl}"
+LOCAL_CA_TRUST_PATH="/usr/local/share/ca-certificates/${HTTPS_CERT_BASE_NAME}-ca.crt"
 PI_PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 CA_STORAGE_ROOT="/var/lib/otto-display-system/certificates"
 SECRETS_ROOT="/var/lib/otto-display-system/secrets"
@@ -117,19 +132,42 @@ if [ "$CERT_REQUIRES_REBUILD" -eq 0 ]; then
     CERT_REQUIRES_REBUILD=1
   elif ! grep -Eq "DNS:${FRONTEND_HOST}(,|$| )" /tmp/otto-cert-san.txt; then
     CERT_REQUIRES_REBUILD=1
+  elif [ -f "$HTTPS_CA_PATH" ] && ! openssl verify -CAfile "$HTTPS_CA_PATH" "$HTTPS_CERT_PATH" >/tmp/otto-cert-verify.txt 2>&1; then
+    CERT_REQUIRES_REBUILD=1
   fi
 fi
 
 if [ "$CERT_REQUIRES_REBUILD" -eq 1 ]; then
-  echo "Generating self-signed HTTPS certificate for ${FRONTEND_HOST}"
-  CERT_CONFIG_PATH="${INSTALL_ROOT}/openssl-otto-display.cnf"
-  cat > "$CERT_CONFIG_PATH" <<EOF
+  echo "Generating local CA and HTTPS certificate for ${FRONTEND_HOST}"
+  CA_CONFIG_PATH="${INSTALL_ROOT}/openssl-otto-ca.cnf"
+  LEAF_CONFIG_PATH="${INSTALL_ROOT}/openssl-otto-leaf.cnf"
+  CSR_PATH="${INSTALL_ROOT}/otto-display.csr"
+
+  cat > "$CA_CONFIG_PATH" <<EOF
+[req]
+default_bits = 4096
+prompt = no
+default_md = sha256
+distinguished_name = dn
+x509_extensions = v3_ca
+
+[dn]
+CN = Otto Display Local CA (${PI_HOSTNAME})
+
+[v3_ca]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, cRLSign, keyCertSign
+EOF
+
+  cat > "$LEAF_CONFIG_PATH" <<EOF
 [req]
 default_bits = 2048
 prompt = no
 default_md = sha256
 distinguished_name = dn
-x509_extensions = v3_req
+req_extensions = v3_req
 
 [dn]
 CN = ${FRONTEND_HOST}
@@ -143,26 +181,51 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = ${FRONTEND_HOST}
 DNS.2 = ${PI_HOSTNAME}.local
+DNS.3 = localhost
 IP.1 = 127.0.0.1
 EOF
   if [ -n "$PI_PRIMARY_IP" ]; then
-    printf 'IP.2 = %s\n' "$PI_PRIMARY_IP" >> "$CERT_CONFIG_PATH"
+    printf 'IP.2 = %s\n' "$PI_PRIMARY_IP" >> "$LEAF_CONFIG_PATH"
   fi
-  openssl req -x509 -nodes -newkey rsa:2048 \
-    -keyout "$HTTPS_KEY_PATH" \
-    -out "$HTTPS_CERT_PATH" \
-    -days 3650 \
-    -config "$CERT_CONFIG_PATH" \
-    -extensions v3_req
-  rm -f "$CERT_CONFIG_PATH" /tmp/otto-cert-san.txt
-fi
 
-if [ ! -f "$HTTPS_CA_PATH" ]; then
-  cp "$HTTPS_CERT_PATH" "$HTTPS_CA_PATH"
+  # Build (or rebuild) a local CA and issue a leaf server certificate from it.
+  openssl req -x509 -nodes -newkey rsa:4096 \
+    -keyout "$HTTPS_CA_KEY_PATH" \
+    -out "$HTTPS_CA_PATH" \
+    -days 3650 \
+    -config "$CA_CONFIG_PATH" \
+    -extensions v3_ca
+
+  openssl req -new -nodes -newkey rsa:2048 \
+    -keyout "$HTTPS_KEY_PATH" \
+    -out "$CSR_PATH" \
+    -config "$LEAF_CONFIG_PATH"
+
+  openssl x509 -req \
+    -in "$CSR_PATH" \
+    -CA "$HTTPS_CA_PATH" \
+    -CAkey "$HTTPS_CA_KEY_PATH" \
+    -CAcreateserial \
+    -CAserial "$HTTPS_CA_SERIAL_PATH" \
+    -out "$HTTPS_CERT_PATH" \
+    -days 825 \
+    -sha256 \
+    -extensions v3_req \
+    -extfile "$LEAF_CONFIG_PATH"
+
+  rm -f "$CA_CONFIG_PATH" "$LEAF_CONFIG_PATH" "$CSR_PATH" /tmp/otto-cert-san.txt /tmp/otto-cert-verify.txt
 fi
 
 chmod 600 "$HTTPS_KEY_PATH"
+chmod 600 "$HTTPS_CA_KEY_PATH"
 chmod 644 "$HTTPS_CERT_PATH" "$HTTPS_CA_PATH"
+
+# Trust the generated local CA on the Pi itself so local browser/kiosk clients
+# can validate the HTTPS endpoint without privacy interstitials.
+cp "$HTTPS_CA_PATH" "$LOCAL_CA_TRUST_PATH"
+if command -v update-ca-certificates >/dev/null 2>&1; then
+  update-ca-certificates >/dev/null 2>&1 || true
+fi
 
 mkdir -p "${CURRENT_DIR}/config"
 cat > "${CURRENT_DIR}/config/pisignage.json" <<EOF
